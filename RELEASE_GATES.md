@@ -487,6 +487,68 @@ file. It guards the canonical artifact that seeds every other consumer, so it
 must run here rather than in a consumer copy — the same reason every job in
 [Repository-specific gates](#repository-specific-gates) lives in provider YAML.
 
+## Commit identity
+
+The naming gate below scans the tree. A commit carries two fields it never
+reads — the **author** and **committer** email — and those leaked the same
+consumer domain the tree forbids, across 506 of the 865 commits on `main`.
+
+Unlike a file, they cannot be scrubbed. Both are part of the commit object, so
+changing one rewrites every descendant hash: it breaks every clone, fork and
+open pull request, and GitHub keeps serving the original objects until a Support
+request garbage-collects them. Whether to rewrite is a disclosure decision, not
+a code change, and it is deliberately not taken — see
+[CLAIM_INVENTORY.md](./CLAIM_INVENTORY.md), which records both the exposure and
+the decision.
+
+`tools/commit-identity-gate.mjs check <base> [head]` is the other half: it stops
+the count growing. Every non-merge commit in `<base>..<head>` must carry a GitHub
+no-reply address — `<id>+<login>@users.noreply.github.com`, or the bare
+`noreply@github.com` GitHub itself commits as for a squash, a web edit or a
+merge-queue entry. It runs on `pull_request` only; against `main` it would fail
+on what is already published.
+
+Two exclusions, both load-bearing — get either wrong and the gate fails pull
+requests on commits their authors cannot rewrite.
+
+**The range runs from the *current* base tip to the pull request's head sha**,
+never from `base.sha` and never to the checked-out `refs/pull/N/merge`.
+`base.sha` is the base as of the pull request's *last push*, and does not follow
+`main` afterwards. Once `main` moves, a re-run pairs that stale sha with a merge
+ref rebuilt against the newer base, and the range picks up everything `main`
+gained — including squash-merge commits, which are ordinary commits the merge
+exclusion does *not* drop — failing the pull request on published work by other
+authors. CI therefore takes the base from `git rev-parse HEAD^1`: HEAD is the
+merge ref, whose first parent is the current base tip, so it is correct however
+stale `base.sha` has grown. For the same reason `merge_group` is not checked —
+its range spans every pull request batched into the entry, each already gated on
+its own run.
+
+**Merge commits are excluded**, because their identity is machinery rather than
+authorship. GitHub authors the synthetic merge-ref commit with the **base
+branch's** identity — which on this history is a pre-existing one by definition,
+and not the contributor's to rewrite.
+
+The rule is an **allowlist**, not a denylist of forbidden domains, and that is
+the point: a denylist only catches the domains someone remembered to list, so
+the next contributor's employer leaks exactly as this one did. It reports the
+commit and the field, never the address — a rejected address is by definition
+one this repository should not publish, and this log is public.
+
+Configure the identity once, before your first commit:
+
+```sh
+git config user.email <id>+<login>@users.noreply.github.com
+```
+
+The id is under Settings → Emails → "Keep my email addresses private". A branch
+whose commits predate this needs both fields rewritten — a plain rebase fixes
+the committer but keeps the original author:
+
+```sh
+git rebase <base> --exec 'git commit --amend --no-edit --reset-author'
+```
+
 ## Naming and confidentiality
 
 This repository is **public**, and it sits below its consumers in the dependency

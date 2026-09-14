@@ -1,6 +1,6 @@
 {
   "note": "Base-file integrity manifest for the saas-starter module. Generated FROM canonical by `node tools/base-integrity.mjs gen`. Consumers MUST NOT hand-edit base files — only add files on the side. Regenerated on every codefly sync from canonical.",
-  "fileCount": 2499,
+  "fileCount": 2501,
   "files": {
     "AUDIT_METRICS.md": "ad6279f6e9519075e2cb9174beb680423387bc33f4fada58b2d42f1b61be8b79",
     "AUTHORIZATION_CATALOG.md": "28d0b238a637c8c27e1e5d1e88fef868f57a92f0f566c4e17c2d6f8b119025d5",
@@ -2459,6 +2459,8 @@
     "tools/cmd/module-format-generated/main.go": "4a4dd601e23316dde675074aef15af0ba5259546e0d03d5508b8fc762b012bc5",
     "tools/cmd/module-package/main.go": "d4d12554eda0c22d881cb23c9e7f5e196989da92d5b93fb8eb1376f3e519b75f",
     "tools/codefly_sdk_boundary_test.go": "a18b2f4d31713eec21c0e34a855b5577599e2cd27f7974f8dea9d77305cefb45",
+    "tools/commit-identity-gate.mjs": "9c34764c583c2890b4b8989c3c265cb3e6abeaac321a5d0867952642a913c71b",
+    "tools/commit-identity-gate.test.mjs": "bf41a84ea74d321f9e9bd59eaf120852c9da30419c4dee6fc91c950eb31a9cfc",
     "tools/composition/api_contracts_test.go": "bd91850bb97b1081c9a90a7eb7b6e2091cae9dbbd998bba3cac9f8c3ba3cc7dc",
     "tools/composition/composition.go": "c47ba2fd0f94772eaf6935d2a47fc99813ee80c78b671b5f6d5b2d48ce1d6306",
     "tools/composition/composition_events.go": "f10706cb15ac2a30b595bf1e7d0a2613bfb6fd4095c63064474d53f507e9bdd6",

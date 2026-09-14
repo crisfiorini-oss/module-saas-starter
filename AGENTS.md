@@ -292,11 +292,22 @@ SDK. See the solution repo for its own instructions.
   [RELEASE_GATES.md § Repository-specific
   gates](./RELEASE_GATES.md#repository-specific-gates), which
   `release-gates.test.mjs` holds to the enforced set.
-- Inside the `base-integrity` job, four more checks run as steps rather than as
+- Inside the `base-integrity` job, five more checks run as steps rather than as
   gates of their own: tenant RLS coverage, migration up/down pairing, pinned
-  plugin versions on generated Go, and generic placeholder names. Run the last
-  locally with `node module/tools/naming-gate.mjs check`; it enforces
-  §"Naming and confidentiality" above across every file's contents and path.
+  plugin versions on generated Go, generic placeholder names, and commit
+  identity. The last two enforce §"Naming and confidentiality" above — the first
+  across every file's contents and path, the second across the author and
+  committer email of every commit a pull request adds, which the tree scan
+  cannot see and no scrub can reach:
+
+  ```bash
+  node module/tools/naming-gate.mjs check
+  git config user.email <id>+<login>@users.noreply.github.com   # once, before your first commit
+  ```
+
+  A commit email outside GitHub's no-reply domains fails the pull request. See
+  [RELEASE_GATES.md § Commit identity](./RELEASE_GATES.md#commit-identity) for
+  the address to use and how to rewrite a branch that predates the gate.
 - Go checks: this repository holds **six independent Go modules** — the root
   module, `module/tools`, and one per Go service (`accounts`, `auth-gateway`,
   `store`, `telemetry`) — and there is no `go.work`, so `go test ./...` covers

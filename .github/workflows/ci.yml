@@ -69,6 +69,8 @@ jobs:
         run: node --test module/tools/generated-pins-gate.test.mjs
       - name: Test the naming gate
         run: node --test module/tools/naming-gate.test.mjs
+      - name: Test the commit-identity gate
+        run: node --test module/tools/commit-identity-gate.test.mjs
       - name: Verify the shipped manifest matches the canonical tree
         run: node module/tools/base-integrity.mjs verify
       - name: Enforce tenant RLS coverage in store migrations
@@ -77,6 +79,32 @@ jobs:
         run: node module/tools/migration-pairing-gate.mjs check
       - name: Validate every service test-target catalog
         run: node module/tools/test-targets-gate.mjs check
+      # The author and committer email are the half of the naming boundary the tree scan cannot
+      # see, and the half that cannot be scrubbed: they are part of the commit object, so
+      # changing one rewrites every descendant hash. Scoped to the commits this change proposes
+      # to add, never to history — running it on `main` would fail on what is already published.
+      #
+      # The range is (current base tip)..(pull request head), and BOTH ends matter. `base.sha` is
+      # the base as of this pull request's last push and does not follow `main` afterwards, so a
+      # re-run after `main` moves pairs a stale sha with a merge ref rebuilt against the newer
+      # base — dragging in every commit `main` gained, squash merges included, which are ordinary
+      # commits `--no-merges` does not drop — and fails the pull request on published work by other
+      # authors. HEAD is `refs/pull/N/merge`, whose first parent IS the current base tip, so it is
+      # correct however stale `base.sha` has grown. `merge_group` is deliberately not checked: its
+      # range spans every pull request batched into the entry, each already gated on its own run.
+      - name: Enforce a GitHub no-reply identity on the commits this change adds
+        if: github.event_name == 'pull_request'
+        env:
+          IDENTITY_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # HEAD^1 is the current base tip only while HEAD is the merge ref, which is what
+          # actions/checkout resolves a pull_request to by default. Under a `ref:` override HEAD
+          # would be the branch tip, where HEAD^1 is merely the previous commit and the range
+          # silently narrows to the last one — so assert the second parent instead of quietly
+          # under-enforcing. `git rev-parse HEAD^1` does not fail on a non-merge commit.
+          git rev-parse -q --verify HEAD^2 >/dev/null ||
+            { echo "expected refs/pull/N/merge as HEAD; the checkout ref must not be overridden"; exit 1; }
+          node module/tools/commit-identity-gate.mjs check "$(git rev-parse HEAD^1)" "$IDENTITY_HEAD"
       # Fails fast and by name on generated Go that no pinned run reproduces,
       # instead of letting Codefly's sync-drift phase report it late as an
       # opaque byte diff that blocks the gate on every open PR.
