@@ -32,7 +32,12 @@ Describe any consumer generically — "a consuming solution", "the downstream
 product", "the agent runtime". Capabilities belong here in their **generic**
 form (RBAC, delegation, Work Contexts, permission enforcement, audit) so every
 consumer reuses them; consumer-specific wiring stays in the consumer's own repo.
-The rule holds for public **and** private files alike.
+The rule holds for public **and** private files alike, and for records as much
+as for files: a pull request's title, its body and its commit messages are
+checked in CI before it can merge (see [Building, testing, and
+CI](#building-testing-and-ci)). Prevention is the whole of the remedy there — a
+published record cannot be retracted, because GitHub keeps prior revisions of an
+edited body and a commit message cannot be changed without rewriting history.
 
 ## Boundaries — non-negotiable
 
@@ -292,11 +297,21 @@ SDK. See the solution repo for its own instructions.
   [RELEASE_GATES.md § Repository-specific
   gates](./RELEASE_GATES.md#repository-specific-gates), which
   `release-gates.test.mjs` holds to the enforced set.
-- Inside the `base-integrity` job, four more checks run as steps rather than as
+- Inside the `base-integrity` job, five more checks run as steps rather than as
   gates of their own: tenant RLS coverage, migration up/down pairing, pinned
-  plugin versions on generated Go, and generic placeholder names. Run the last
-  locally with `node module/tools/naming-gate.mjs check`; it enforces
-  §"Naming and confidentiality" above across every file's contents and path.
+  plugin versions on generated Go, generic placeholder names across the tree,
+  and the same names in the pull request's title, body and commit messages. The
+  last two enforce §"Naming and confidentiality" above — the first over every
+  file's contents and path, the second over the records around them:
+
+  ```bash
+  node module/tools/naming-gate.mjs check     # the tree
+  git config core.hooksPath scripts/hooks     # opt in: reject a bad commit message locally
+  ```
+
+  The record check names only the matching mode, never the term, because its log
+  is public. A pushed message can no longer be edited, so fix a failure by
+  amending or rebasing rather than by adding a commit on top.
 - Go checks: this repository holds **six independent Go modules** — the root
   module, `module/tools`, and one per Go service (`accounts`, `auth-gateway`,
   `store`, `telemetry`) — and there is no `go.work`, so `go test ./...` covers

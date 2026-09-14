@@ -15,7 +15,15 @@
 // the rule dozens of times. This repository is public. Zero-tolerance.
 //
 //   node tools/naming-gate.mjs check          # fail on any real name in content or filenames
+//   node tools/naming-gate.mjs records <base> # ... in the pull request and in <base>..HEAD
+//   node tools/naming-gate.mjs message <file> # ... in one commit message (the commit-msg hook)
 //   node tools/naming-gate.mjs hash <term>    # compute the digest for a new naming-terms entry
+//
+// AGENTS.md binds the rule to "issues, PRs, ... commit messages" too, and those are the copies
+// that cannot be taken back: GitHub retains prior revisions of an edited body and serves them
+// through its API, and a commit message cannot be edited at all without rewriting history. So the
+// record checks run BEFORE publication, and they report only the mode that matched — printing the
+// term into a public CI log would republish precisely what the gate exists to keep out of it.
 //
 // The forbidden terms are stored as SHA-256 digests, never literals. A guard that spelled the
 // names would itself be the worst violation in the tree: one public file enumerating every
@@ -30,6 +38,7 @@
 // The module root is the parent of tools/, so this works identically in canonical's `module/`
 // and a consumer's `modules/<name>/`.
 
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync, lstatSync, existsSync } from "node:fs";
 import { join, relative, dirname, resolve } from "node:path";
@@ -143,11 +152,12 @@ function loadAllowlist(root = MODULE_ROOT) {
 // acronym branch is ordered first and guarded so `APIKey` yields API + Key, not APIK + ey.
 const CASE_UNIT_RE = /[A-Z]+(?![a-z])|[A-Z][a-z]*|[a-z]+|[0-9]+/g;
 
-// Every (mode, digest) a single slug occurrence can satisfy.
-function slugHits(raw, terms) {
+// Every match a single slug occurrence produces, each carrying the mode that caught it. The tree
+// scan reports the text; the record checks report only the mode.
+function slugMatches(raw, terms) {
   const hits = [];
   const lower = raw.toLowerCase();
-  if (terms.slug.has(digest(lower))) hits.push(raw);
+  if (terms.slug.has(digest(lower))) hits.push({ text: raw, mode: "slug" });
 
   // Each separator part contributes itself AND, when it is a camelCase/PascalCase identifier,
   // its case units. Splitting on separators alone never saw a name fused into an identifier —
@@ -165,14 +175,14 @@ function slugHits(raw, terms) {
   const compound = units.length > 1;
   for (const part of units) {
     const h = digest(part.toLowerCase());
-    if (terms.word.has(h)) hits.push(part);
-    else if (compound && terms.compound.has(h)) hits.push(part);
-    else if (terms.proper.has(h) && /^[A-Z][a-z]+$/.test(part)) hits.push(part);
+    if (terms.word.has(h)) hits.push({ text: part, mode: "word" });
+    else if (compound && terms.compound.has(h)) hits.push({ text: part, mode: "compound" });
+    else if (terms.proper.has(h) && /^[A-Z][a-z]+$/.test(part)) hits.push({ text: part, mode: "proper" });
   }
   return hits;
 }
 
-function phraseHits(line, terms) {
+function phraseMatches(line, terms) {
   if (!terms.phrase.size) return [];
   const words = line.match(WORD_RE);
   if (!words) return [];
@@ -180,11 +190,18 @@ function phraseHits(line, terms) {
   for (let i = 0; i < words.length; i += 1) {
     for (let n = 2; n <= 3 && i + n <= words.length; n += 1) {
       const gram = words.slice(i, i + n);
-      if (terms.phrase.has(digest(gram.join(" ").toLowerCase()))) hits.push(gram.join(" "));
+      if (terms.phrase.has(digest(gram.join(" ").toLowerCase()))) {
+        hits.push({ text: gram.join(" "), mode: "phrase" });
+      }
     }
   }
   return hits;
 }
+
+const lineMatches = (line, terms) => [
+  ...(line.match(SLUG_RE) ?? []).flatMap((slug) => slugMatches(slug, terms)),
+  ...phraseMatches(line, terms),
+];
 
 function walk(dir, out, base) {
   for (const name of readdirSync(dir)) {
@@ -227,7 +244,7 @@ export function namingErrors(moduleRoot = MODULE_ROOT, scanRoot = canonicalScanR
 
     // A content-only scan misses a file that names a product in its own filename — which is
     // how the worst offender in the tree shipped to every consumer.
-    for (const hit of new Set(rel.split("/").flatMap((seg) => slugHits(seg, terms)))) {
+    for (const hit of new Set(rel.split("/").flatMap((seg) => slugMatches(seg, terms).map((m) => m.text)))) {
       errors.push(`${rel}: forbidden name in path (${hit})`);
     }
 
@@ -251,14 +268,105 @@ export function namingErrors(moduleRoot = MODULE_ROOT, scanRoot = canonicalScanR
     if (source.includes("\0")) continue; // binary that slipped the extension list
 
     source.split("\n").forEach((line, i) => {
-      const hits = new Set([
-        ...(line.match(SLUG_RE) ?? []).flatMap((slug) => slugHits(slug, terms)),
-        ...phraseHits(line, terms),
-      ]);
+      const hits = new Set(lineMatches(line, terms).map((m) => m.text));
       for (const hit of hits) errors.push(`${rel}:${i + 1}: forbidden name (${hit})`);
     });
   }
   return errors.sort();
+}
+
+// Records — a pull request title or body, a commit message — scanned with the same terms and the
+// same matcher as the tree, reported WITHOUT the matched text. Only the mode and the line survive,
+// which is enough to find the word in your own draft and not enough to republish it.
+export function messageErrors(entries, moduleRoot = MODULE_ROOT) {
+  const terms = loadTerms(moduleRoot);
+  if (!terms) return ["tools/naming-terms.json is missing or not valid JSON"];
+
+  const errors = [];
+  for (const { label, text } of entries) {
+    (text ?? "").split("\n").forEach((line, i) => {
+      const modes = new Set(lineMatches(line, terms).map((m) => m.mode));
+      for (const mode of [...modes].sort()) {
+        errors.push(`${label}:${i + 1}: forbidden name (mode: ${mode})`);
+      }
+    });
+  }
+  return errors;
+}
+
+// git hands the commit-msg hook the whole buffer: the author's message, git's own `#` comment
+// block, and under `commit.verbose` the entire diff below a scissors line. Only the message is the
+// author's text — the diff is tree content the `check` scan already owns. Comments are blanked
+// rather than dropped so a reported line number still points at the line in the editor.
+const SCISSORS_RE = /^#\s*-+\s*>8\s*-+/;
+export function commitMessageBody(raw) {
+  let cut = false;
+  return raw
+    .split("\n")
+    .map((line) => {
+      if (SCISSORS_RE.test(line)) cut = true;
+      return cut || line.startsWith("#") ? "" : line;
+    })
+    .join("\n");
+}
+
+// %x1f separates the sha from the message and %x1e terminates each record: a commit message
+// contains newlines, so no line-oriented format can delimit one.
+function commitEntries(base) {
+  let out;
+  try {
+    out = execFileSync("git", ["log", "--format=%H%x1f%B%x1e", `${base}..HEAD`], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "inherit"],
+    });
+  } catch {
+    console.error(`naming-gate: cannot read commits in ${base}..HEAD`);
+    process.exit(1);
+  }
+  return out
+    .split("\x1e")
+    .filter((record) => record.includes("\x1f"))
+    .map((record) => {
+      const [sha, ...rest] = record.replace(/^\n/, "").split("\x1f");
+      return { label: `commit ${sha.slice(0, 8)} message`, text: rest.join("\x1f") };
+    });
+}
+
+function reportRecords(errors, scanned) {
+  if (errors.length) {
+    console.error("naming-gate: a real customer, product, or consumer name in a record that cannot be retracted:");
+    errors.forEach((error) => console.error(`    ${error}`));
+    console.error(
+      `\nFAIL: ${errors.length} forbidden name(s). The term is deliberately not printed — this log ` +
+        `is public. Rewrite it with a generic placeholder — "a consuming solution", "the ` +
+        `downstream product", "Acme", "Jane Doe", "user@example.com" — and amend or rebase the ` +
+        `commit rather than adding one on top: a published message cannot be edited afterwards. ` +
+        `See AGENTS.md §"Naming and confidentiality".`,
+    );
+    process.exit(1);
+  }
+  console.log(`✓ no real customer, product, or consumer names in ${scanned} record(s).`);
+}
+
+// The pull request's own text arrives through the environment, never interpolated into a shell
+// command: it is attacker-controlled. It is absent on a merge-queue entry, where only the commits
+// remain to check.
+function records(base) {
+  const entries = [];
+  for (const [label, text] of [
+    ["pull request title", process.env.NAMING_PR_TITLE],
+    ["pull request body", process.env.NAMING_PR_BODY],
+  ]) {
+    if (text) entries.push({ label, text });
+  }
+  entries.push(...commitEntries(base));
+  reportRecords(messageErrors(entries), entries.length);
+}
+
+function message(path) {
+  const entries = [{ label: "commit message", text: commitMessageBody(readFileSync(path, "utf8")) }];
+  reportRecords(messageErrors(entries), entries.length);
 }
 
 function check() {
@@ -280,7 +388,15 @@ function check() {
 if (resolve(process.argv[1] ?? "") === resolve(SCRIPT_PATH)) {
   const cmd = process.argv[2];
   if (cmd === "check") check();
-  else if (cmd === "hash") {
+  else if (cmd === "records" || cmd === "message") {
+    const argument = process.argv[3];
+    if (!argument) {
+      console.error(`usage: naming-gate.mjs ${cmd} <${cmd === "records" ? "base-ref" : "message-file"}>`);
+      process.exit(2);
+    }
+    if (cmd === "records") records(argument);
+    else message(argument);
+  } else if (cmd === "hash") {
     const term = process.argv[3];
     if (!term) {
       console.error("usage: naming-gate.mjs hash <term>");
@@ -288,7 +404,7 @@ if (resolve(process.argv[1] ?? "") === resolve(SCRIPT_PATH)) {
     }
     console.log(digest(term.toLowerCase()));
   } else {
-    console.error("usage: naming-gate.mjs <check|hash>");
+    console.error("usage: naming-gate.mjs <check|records|message|hash>");
     process.exit(2);
   }
 }

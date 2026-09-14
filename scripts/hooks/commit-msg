@@ -1,0 +1,11 @@
+#!/bin/sh
+# Checks the message you are about to commit against the same digests CI runs.
+#
+# Opt in from the repository root:
+#
+#     git config core.hooksPath scripts/hooks
+#
+# Worth having even though CI enforces the same rule: CI fails after the message exists, and a
+# published commit message cannot be edited without rewriting history.
+set -e
+exec node "$(dirname "$0")/../../module/tools/naming-gate.mjs" message "$1"

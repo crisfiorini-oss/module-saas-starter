@@ -88,6 +88,21 @@ jobs:
       # and ~380 violating lines accumulated across 68 files before this gate existed.
       - name: Enforce generic placeholder names across the tree
         run: node module/tools/naming-gate.mjs check
+      # The same rule over the half of it that lives outside the tree. This one is prevention
+      # only: GitHub retains prior revisions of an edited body and serves them through its API,
+      # and a commit message cannot be edited at all without rewriting history, so a name that
+      # reaches the tracker is published for good. The failure prints the mode and the line, never
+      # the term — this log is public.
+      - name: Enforce generic placeholder names in the pull request and its commits
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          # Through the environment, never interpolated into the script: both are
+          # attacker-controlled text. Neither exists on a merge-queue entry, which checks the
+          # commits alone.
+          NAMING_PR_TITLE: ${{ github.event.pull_request.title }}
+          NAMING_PR_BODY: ${{ github.event.pull_request.body }}
+          NAMING_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: node module/tools/naming-gate.mjs records "$NAMING_BASE"
 
   authz-coverage:
     name: Authorization coverage

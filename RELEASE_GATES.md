@@ -503,11 +503,36 @@ rather than literals — a plaintext list would itself be the worst violation in
 the tree. That is not secrecy (short digests are dictionary-attackable); it only
 avoids stating the relationship.
 
+The same rule binds the records around the tree — AGENTS.md names "issues, PRs,
+… commit messages" — and those are the copies that cannot be taken back: GitHub
+retains prior revisions of an edited body and serves them through its API, and a
+commit message cannot be edited at all without rewriting history. So a second
+step, `naming-gate.mjs records`, runs the same digests through the same matcher
+over the pull request's **title**, its **body**, and every **commit message** in
+the range, and fails the pull request before it can merge. It reports the
+matching mode and the line, never the term: that log is public, and quoting the
+match would republish exactly what the gate exists to keep out of it. It runs on
+`pull_request` and on `merge_group`, where the title and body do not exist and
+the commits alone are checked.
+
+Prevention is the whole of the remedy here. Cleaning up a record that is already
+published is a separate remediation and only a partial one, for the same two
+reasons that make the check worth having.
+
 Locally:
 
 ```sh
 node module/tools/naming-gate.mjs check
-node module/tools/naming-gate.mjs hash <term>   # digest for a new terms entry
+node module/tools/naming-gate.mjs records <base>   # title and body from the environment, plus <base>..HEAD
+node module/tools/naming-gate.mjs message <file>   # one commit message — what the hook runs
+node module/tools/naming-gate.mjs hash <term>      # digest for a new terms entry
+```
+
+`scripts/hooks/commit-msg` runs the `message` check before the commit exists at
+all. It is opt-in, because it takes over `core.hooksPath` for the repository:
+
+```sh
+git config core.hooksPath scripts/hooks
 ```
 
 A genuine exception — a copyright holder, a CODEOWNERS handle — goes in

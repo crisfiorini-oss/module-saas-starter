@@ -11,7 +11,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 
-import { namingErrors, canonicalScanRoot } from "./naming-gate.mjs";
+import { namingErrors, canonicalScanRoot, messageErrors, commitMessageBody } from "./naming-gate.mjs";
 
 const digest = (value) => createHash("sha256").update(value.toLowerCase()).digest("hex");
 
@@ -23,9 +23,8 @@ const TERMS = [
   { term: "north star mutual", modes: ["phrase"] },
 ];
 
-// Builds a throwaway module root carrying the synthetic term list, then writes `files`
-// (relative path -> contents) into it and runs the gate over it.
-function run(files, { allowlist } = {}) {
+// A throwaway module root carrying the synthetic term list and nothing else.
+function termsRoot() {
   const root = mkdtempSync(join(tmpdir(), "naming-gate-"));
   mkdirSync(join(root, "tools"), { recursive: true });
   writeFileSync(
@@ -35,6 +34,12 @@ function run(files, { allowlist } = {}) {
       terms: TERMS.map(({ term, modes }) => ({ h: digest(term), modes, note: "fixture" })),
     }),
   );
+  return root;
+}
+
+// Writes `files` (relative path -> contents) into such a root and runs the tree gate over it.
+function run(files, { allowlist } = {}) {
+  const root = termsRoot();
   if (allowlist) {
     writeFileSync(
       join(root, "tools", "naming-allowlist.json"),
@@ -229,6 +234,89 @@ test("machine-generated skips apply in canonical, where paths carry a module/ pr
     assert.deepEqual(namingErrors(moduleRoot, repo), []);
   } finally {
     rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+// Records — a pull request title or body, a commit message — scanned in a throwaway root.
+function messages(entries) {
+  const root = termsRoot();
+  try {
+    return messageErrors(entries, root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test("a record is reported by mode, never by the matched term", () => {
+  const out = messages([{ label: "pull request title", text: "Wire up the ZorpCo tenant" }]);
+  assert.deepEqual(out, ["pull request title:1: forbidden name (mode: word)"]);
+  // The whole point of the redaction: CI logs are public, so the term must not survive the report.
+  assert.doesNotMatch(out.join("\n"), /zorpco/i);
+});
+
+test("every mode names itself in a record", () => {
+  const byMode = (text) => messages([{ label: "r", text }]).join("\n");
+  assert.match(byMode("Tracked in vantage-core#12"), /\(mode: slug\)/);
+  assert.match(byMode("Quill composes this module"), /\(mode: proper\)/);
+  assert.match(byMode('writeFixture(t, "quill-control")'), /\(mode: compound\)/);
+  assert.match(byMode("Sold to North Star Mutual"), /\(mode: phrase\)/);
+});
+
+test("a record line number points at the offending line of a body", () => {
+  const body = "Closes #12.\n\n## Summary\n\n- rolled out for ZorpCo\n";
+  assert.deepEqual(messages([{ label: "pull request body", text: body }]), [
+    "pull request body:5: forbidden name (mode: word)",
+  ]);
+});
+
+test("a clean record passes, and each entry is reported under its own label", () => {
+  assert.deepEqual(
+    messages([
+      { label: "pull request title", text: "fix: gate records as well as files (#1)" },
+      { label: "commit abc1234 message", text: "fix: gate records\n\nFor a consuming solution.\n" },
+    ]),
+    [],
+  );
+  const out = messages([
+    { label: "pull request title", text: "ZorpCo" },
+    { label: "commit abc1234 message", text: "Quill" },
+  ]);
+  assert.deepEqual(out, [
+    "pull request title:1: forbidden name (mode: word)",
+    "commit abc1234 message:1: forbidden name (mode: proper)",
+  ]);
+});
+
+test("one line reports a mode once, however many times it matches", () => {
+  assert.deepEqual(messages([{ label: "r", text: "ZorpCo and zorpco and ZorpCo again" }]), [
+    "r:1: forbidden name (mode: word)",
+  ]);
+});
+
+test("a commit message is the author's text, not git's comments or the verbose diff", () => {
+  const raw = [
+    "fix: a clean subject",
+    "",
+    "Rolled out for ZorpCo.",
+    "# Please enter the commit message for your changes.",
+    "# On branch quill-control",
+    "# ------------------------ >8 ------------------------",
+    "diff --git a/a.md b/a.md",
+    "+ZorpCo",
+  ].join("\n");
+  // Only line 3 is the author's; the comment block and everything below the scissors line are
+  // git's own prose and tree content the `check` scan already owns. Line 3 must still read 3.
+  assert.deepEqual(messages([{ label: "commit message", text: commitMessageBody(raw) }]), [
+    "commit message:3: forbidden name (mode: word)",
+  ]);
+});
+
+test("a record scan with a missing term list fails closed rather than passing silently", () => {
+  const root = mkdtempSync(join(tmpdir(), "naming-gate-"));
+  try {
+    assert.equal(messageErrors([{ label: "r", text: "ZorpCo" }], root).length, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
