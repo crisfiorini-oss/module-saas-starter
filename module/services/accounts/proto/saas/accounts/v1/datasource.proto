@@ -403,12 +403,24 @@ message CompleteGitHubAppSetupRequest {
     max_len: 255
   }];
   // The installation the redirect claims was installed. A claim, never
-  // authority: the host verifies it against GitHub as the App, and refuses one
-  // already bound to a different organization.
+  // authority: it is a small integer supplied by a browser, so the host both
+  // verifies it against GitHub as the App and requires `code` below to
+  // attribute it to the caller, and refuses one already bound to a different
+  // organization.
   string installation_id = 3 [(buf.validate.field).string = {
     min_len: 1
     max_len: 32
     pattern: "^[0-9]+$"
+  }];
+  // The authorization code GitHub appends to the setup redirect when the App
+  // requests user authorization during installation. The host trades it for a
+  // user-to-server token and requires that user to reach the installation,
+  // which is what stops one organization claiming another's installation by
+  // naming its id. Required: without it an installation is attributable to
+  // nobody.
+  string code = 4 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
   }];
 }
 

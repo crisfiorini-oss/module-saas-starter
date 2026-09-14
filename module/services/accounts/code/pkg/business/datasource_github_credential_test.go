@@ -35,6 +35,14 @@ type fakeGitHubApp struct {
 	suspended    bool // the installation resolves but grants nothing
 	// What the installation grants. Nil serves a single default repository.
 	repositories []map[string]any
+	// Installations the OAuth user can reach. Nil means just testInstallationID,
+	// so the default harness represents a caller who did install what they present.
+	userInstallations []int
+	// Non-empty makes the user-token exchange answer GitHub's way: HTTP 200 with
+	// an error member rather than a failure status.
+	oauthError string
+	// Serves every repository page full, so a walk that is not bounded never ends.
+	alwaysFullRepoPages bool
 
 	mu        sync.Mutex
 	mints     int
@@ -43,7 +51,37 @@ type fakeGitHubApp struct {
 
 func (f *fakeGitHubApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
+	case strings.HasSuffix(r.URL.Path, "/login/oauth/access_token"):
+		if f.oauthError != "" {
+			writeAppJSON(w, http.StatusOK, map[string]any{"error": f.oauthError})
+			return
+		}
+		writeAppJSON(w, http.StatusOK, map[string]any{"access_token": "ghu_user", "token_type": "bearer"})
+	case strings.HasSuffix(r.URL.Path, "/user/installations"):
+		reachable := f.userInstallations
+		if reachable == nil {
+			reachable = []int{testInstallationID}
+		}
+		installations := make([]map[string]any, 0, len(reachable))
+		for _, id := range reachable {
+			installations = append(installations, map[string]any{"id": id})
+		}
+		writeAppJSON(w, http.StatusOK, map[string]any{
+			"total_count":   len(installations),
+			"installations": installations,
+		})
 	case strings.HasSuffix(r.URL.Path, "/installation/repositories"):
+		if f.alwaysFullRepoPages {
+			full := make([]map[string]any, 0, 100)
+			for i := range 100 {
+				full = append(full, map[string]any{
+					"full_name":      fmt.Sprintf("acme/repo-%d", i),
+					"default_branch": "main",
+				})
+			}
+			writeAppJSON(w, http.StatusOK, map[string]any{"total_count": 100000, "repositories": full})
+			return
+		}
 		repositories := f.repositories
 		if repositories == nil {
 			repositories = []map[string]any{{"full_name": "acme/handbook", "default_branch": "main"}}
@@ -153,7 +191,9 @@ type appHarness struct {
 // replica restart or a token reaching its hour-long expiry — the points at
 // which the host has to mint again and therefore learns that access changed.
 func (h *appHarness) restart() {
-	h.svc.SetGitHubConnector(githubconnector.NewConnector(githubconnector.WithBaseURL(h.serverURL)))
+	h.svc.SetGitHubConnector(githubconnector.NewConnector(
+		githubconnector.WithBaseURL(h.serverURL),
+		githubconnector.WithOAuthBaseURL(h.serverURL)))
 }
 
 func newAppHarness(t *testing.T, app *fakeGitHubApp) *appHarness {
@@ -164,8 +204,11 @@ func newAppHarness(t *testing.T, app *fakeGitHubApp) *appHarness {
 	store := newDatasourceFakeStore()
 	producer := &recordingProducer{}
 	svc, audit := newDatasourceService(store, producer, &fakeGitHub{defaultBranch: "main", commit: "abc"})
-	svc.SetGitHubConnector(githubconnector.NewConnector(githubconnector.WithBaseURL(server.URL)))
+	svc.SetGitHubConnector(githubconnector.NewConnector(
+		githubconnector.WithBaseURL(server.URL),
+		githubconnector.WithOAuthBaseURL(server.URL)))
 	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "example-app", "")
+	svc.SetGitHubAppOAuth("client-id", "client-secret")
 
 	tokens := &githubTokens{}
 	gh := &fakeGitHub{defaultBranch: "main", commit: "abc"}

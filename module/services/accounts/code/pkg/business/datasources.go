@@ -572,16 +572,19 @@ func (s *Service) AddSource(ctx context.Context, actorID string, input AddSource
 
 	switch input.Provider {
 	case DatasourceProviderGitHub:
-		if credential == "" {
-			return nil, w.NewError("credential is required")
-		}
 		repo := strings.TrimSpace(input.Repo)
 		if !validRepo(repo) {
 			return nil, w.NewError("repo must be in owner/name form")
 		}
-		if err := s.validateGitHubSource(ctx, repo, input.Branch, credential); err != nil {
+		// The same resolution AddGitHubSource performs: a supplied credential is a
+		// repository-scoped PAT, and none connects through the deployment's App.
+		// Sharing it keeps the provider-agnostic call from refusing a connect the
+		// GitHub-specific one accepts.
+		resolved, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, credential)
+		if err != nil {
 			return nil, err
 		}
+		credential = resolved
 		source.Repo = repo
 		source.Paths = normalizePaths(input.Paths)
 		source.Branch = strings.TrimSpace(input.Branch)

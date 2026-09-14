@@ -12,6 +12,10 @@ type authenticationCeremonyRetentionStore interface {
 	DeleteExpiredAuthenticationCeremonies(ctx context.Context, before time.Time) (webauthn, mfaLogin int64, err error)
 }
 
+type githubAppSetupRetentionStore interface {
+	DeleteExpiredGitHubAppSetups(ctx context.Context, before time.Time) (int64, error)
+}
+
 // RunRetention loads all data retention policies and deletes records older
 // than the configured retention period for each resource type. Returns a
 // summary of deleted counts per resource type.
@@ -83,6 +87,21 @@ func (s *Service) RunRetention(ctx context.Context) (map[string]int64, error) {
 		})
 		if bypassErr != nil {
 			w.Warn("authentication ceremony cleanup failed", wool.ErrField(bypassErr))
+		}
+	}
+
+	// A GitHub App setup row is the same kind of state: a short-lived hand-off
+	// that is dead once redeemed or lapsed, and that nothing else deletes. Swept
+	// on the same forensic window so an abandoned connect attempt does not leave
+	// a row behind permanently.
+	if setupStore, ok := s.store.(githubAppSetupRetentionStore); ok {
+		bypassErr := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
+			setups, err := setupStore.DeleteExpiredGitHubAppSetups(ctx, time.Now().Add(-24*time.Hour))
+			deleted["github_app_setups"] = setups
+			return err
+		})
+		if bypassErr != nil {
+			w.Warn("github app setup cleanup failed", wool.ErrField(bypassErr))
 		}
 	}
 

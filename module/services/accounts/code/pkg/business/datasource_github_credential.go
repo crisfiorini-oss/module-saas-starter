@@ -86,6 +86,16 @@ func (s *Service) SetGitHubAppRegistration(appID, privateKeyPEM, slug, webhookSe
 	s.githubAppWebhookSecret = strings.TrimSpace(webhookSecret)
 }
 
+// SetGitHubAppOAuth wires the App's OAuth client, which tenant onboarding uses
+// to identify the person returning from an install. It is deliberately separate
+// from the signing registration above: that credential acts as the App, this one
+// acts as a user, and only the latter can attribute an installation to a caller.
+// An empty pair leaves App onboarding off.
+func (s *Service) SetGitHubAppOAuth(clientID, clientSecret string) {
+	s.githubAppClientID = strings.TrimSpace(clientID)
+	s.githubAppClientSecret = strings.TrimSpace(clientSecret)
+}
+
 // GitHubAppConfigured reports whether this deployment can mint installation
 // tokens at all.
 func (s *Service) GitHubAppConfigured() bool {

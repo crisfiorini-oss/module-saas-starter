@@ -81,6 +81,20 @@ func (s *PostgresStore) ClaimGitHubAppInstallation(ctx context.Context, installa
 	return s.GitHubAppInstallationClaimedBy(ctx, installationID, orgID)
 }
 
+// DeleteExpiredGitHubAppSetups removes setup rows past their redemption window.
+// A lapsed or already-consumed row is operational hand-off state with no further
+// use, and nothing else deletes one — without this sweep the table grows by a
+// row for every connect attempt, including every abandoned one, forever.
+// Cross-tenant by nature, so the caller runs it under the control-plane role.
+func (s *PostgresStore) DeleteExpiredGitHubAppSetups(ctx context.Context, before time.Time) (int64, error) {
+	tag, err := s.getQueryExecutor(ctx).Exec(ctx,
+		`DELETE FROM github_app_setups WHERE expires_at < $1`, before)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
 func (s *PostgresStore) GitHubAppInstallationClaimedBy(ctx context.Context, installationID, orgID string) (bool, error) {
 	var exists bool
 	err := s.getQueryExecutor(ctx).QueryRow(ctx, `

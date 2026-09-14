@@ -28,10 +28,22 @@ const githubAppSetupTTL = 15 * time.Minute
 // that configures it when it configures the App.
 const githubAppInstallBaseURL = "https://github.com"
 
+// githubAppSetupProbeTimeout bounds the GitHub round trips onboarding makes,
+// matching the budget connect-time validation and migration already use. Without
+// it a hung GitHub holds the request for the server's whole timeout.
+const githubAppSetupProbeTimeout = 10 * time.Second
+
 // githubAppMetadataPermissions is the whole authority needed to enumerate what
 // an installation grants. Listing repositories must never require the contents
 // read a fetch does.
 var githubAppMetadataPermissions = map[string]string{"metadata": "read"}
+
+// githubInstallationUnattributableMessage is the single answer to every failure
+// to attribute an installation to the caller: a rejected authorization code, a
+// code belonging to someone else, and an installation the authorizing user
+// cannot reach are all reported identically, so the endpoint never confirms
+// which installation ids exist.
+const githubInstallationUnattributableMessage = "That GitHub App installation could not be attributed to you. Install the App from the GitHub account or organization you administer and approve the authorization request, then connect again."
 
 // ErrGitHubAppSetupRejected is the single answer to every failed redemption:
 // unknown, expired, already consumed, or begun by a different user. One error
@@ -90,10 +102,18 @@ func hashGitHubAppSetupState(plaintext string) string {
 }
 
 // githubAppOnboardingReady reports whether this deployment can drive tenant App
-// onboarding at all: it needs the registration to mint with and the slug to
-// build an install link from.
+// onboarding at all: it needs the registration to mint with, the slug to build
+// an install link from, and the App's OAuth client to identify the person who
+// comes back from the install.
+//
+// The OAuth client is not optional. Without it the host can prove an
+// installation exists but not that the caller controls it, and an installation
+// id is a browser-supplied integer — so onboarding stays off rather than
+// binding installations on trust. Sources can still be connected with a
+// repository-scoped fine-grained PAT.
 func (s *Service) githubAppOnboardingReady() bool {
-	return s.GitHubAppConfigured() && s.githubAppSlug != "" && s.githubConnector != nil
+	return s.GitHubAppConfigured() && s.githubAppSlug != "" && s.githubConnector != nil &&
+		s.githubAppClientID != "" && s.githubAppClientSecret != ""
 }
 
 // BeginGitHubAppSetup mints a one-time setup state bound to this organization
@@ -140,15 +160,26 @@ func (s *Service) BeginGitHubAppSetup(ctx context.Context, actorID, orgID string
 //
 // The ordering is deliberate. The state is burned first, in its own
 // transaction, so a replayed redirect is refused before any work is done and a
-// failed verification cannot be retried against the same state. Verification
-// then asks GitHub — as the App — whether the installation exists, because an
-// installation id arriving from a browser redirect is a claim and not authority.
-// Finally the installation is claimed for this organization, where the table's
-// primary key refuses one another tenant already holds.
-func (s *Service) CompleteGitHubAppSetup(ctx context.Context, actorID, orgID, state, installationID string) (*GitHubAppInstallation, error) {
+// failed verification cannot be retried against the same state.
+//
+// Two separate things then have to be true, and neither implies the other.
+// Asking GitHub as the App whether the installation exists proves only that
+// *some* tenant installed it — every installation of this App answers that, so
+// on its own it would let any organization claim any other organization's
+// installation by naming its id, which is a small integer arriving from a
+// browser. So the authorization is the user-to-server exchange: the code GitHub
+// appended to the redirect is traded for a token acting as the person holding
+// it, and that person must be able to reach the installation. Only then is it
+// claimed, where the table's primary key refuses one another tenant already
+// holds.
+func (s *Service) CompleteGitHubAppSetup(ctx context.Context, actorID, orgID, state, installationID, code string) (*GitHubAppInstallation, error) {
 	if !s.githubAppOnboardingReady() {
 		return nil, status.Error(codes.FailedPrecondition,
-			"This deployment has no GitHub App configured, so there is no installation to complete.")
+			"This deployment has no GitHub App configured for tenant onboarding, so there is no installation to complete.")
+	}
+	if strings.TrimSpace(code) == "" {
+		return nil, status.Error(codes.InvalidArgument,
+			"This GitHub App setup return carried no authorization code, so the installation cannot be attributed to you. The App must request user authorization during installation.")
 	}
 
 	if err := s.store.WithOrgTx(ctx, orgID, func(ctx context.Context) error {
@@ -161,14 +192,20 @@ func (s *Service) CompleteGitHubAppSetup(ctx context.Context, actorID, orgID, st
 		return nil, err
 	}
 
+	probeCtx, cancel := context.WithTimeout(ctx, githubAppSetupProbeTimeout)
+	defer cancel()
+
 	registration := githubconnector.AppCredential{AppID: s.githubAppID, PrivateKeyPEM: s.githubAppKeyPEM}
-	installation, err := s.githubConnector.GetInstallation(ctx, registration, installationID)
+	installation, err := s.githubConnector.GetInstallation(probeCtx, registration, installationID)
 	if err != nil {
 		return nil, githubInstallationTokenError(err)
 	}
 	if installation.SuspendedAt != nil {
 		return nil, status.Error(codes.FailedPrecondition,
 			"That GitHub App installation is suspended, so it grants no access. Unsuspend it on GitHub, then connect again.")
+	}
+	if err := s.verifyInstallationReachableByCaller(probeCtx, installation.ID, code); err != nil {
+		return nil, err
 	}
 
 	if err := s.store.WithOrgTx(ctx, orgID, func(ctx context.Context) error {
@@ -193,6 +230,39 @@ func (s *Service) CompleteGitHubAppSetup(ctx context.Context, actorID, orgID, st
 		return nil, err
 	}
 	return &GitHubAppInstallation{InstallationID: installation.ID, Repositories: repositories}, nil
+}
+
+// verifyInstallationReachableByCaller proves the person who came back from the
+// install can actually reach the installation they are presenting, by trading
+// GitHub's authorization code for a user-to-server token and asking GitHub what
+// that user reaches.
+//
+// This is the whole authorization of the claim. Everything else in the flow —
+// the one-time state, the app-authenticated lookup — establishes that a request
+// is fresh and that an installation exists; none of it establishes that this
+// caller is entitled to the installation, because the id is an enumerable
+// integer supplied by the browser.
+//
+// Every failure answers the same way: a rejected code, a code for a different
+// person, and an installation that person cannot reach are indistinguishable to
+// the caller, so the endpoint does not become an oracle for which installations
+// exist.
+func (s *Service) verifyInstallationReachableByCaller(ctx context.Context, installationID, code string) error {
+	userToken, err := s.githubConnector.ExchangeUserCode(ctx, s.githubAppClientID, s.githubAppClientSecret, code)
+	if err != nil {
+		if errors.Is(err, githubconnector.ErrUserCodeRejected) {
+			return status.Error(codes.PermissionDenied, githubInstallationUnattributableMessage)
+		}
+		return githubInstallationTokenError(err)
+	}
+	reachable, err := s.githubConnector.UserAdministersInstallation(ctx, userToken, installationID)
+	if err != nil {
+		return githubInstallationTokenError(err)
+	}
+	if !reachable {
+		return status.Error(codes.PermissionDenied, githubInstallationUnattributableMessage)
+	}
+	return nil
 }
 
 // listGitHubAppRepositories enumerates what the installation grants, marking the

@@ -14,6 +14,10 @@ import (
 // installations override it via WithBaseURL.
 const DefaultBaseURL = "https://api.github.com"
 
+// DefaultOAuthBaseURL is where GitHub serves the user-token exchange. It is not
+// the API host: an Enterprise Server deployment overrides both independently.
+const DefaultOAuthBaseURL = "https://github.com"
+
 // tokenRefreshWindow re-mints an installation token this long before it
 // actually expires, so a token handed out for a fetch never lapses mid-request.
 const tokenRefreshWindow = time.Minute
@@ -24,9 +28,10 @@ const tokenRefreshWindow = time.Minute
 // every request or hit GitHub's token-creation rate limit. It is safe for
 // concurrent use.
 type Connector struct {
-	baseURL    string
-	httpClient *http.Client
-	now        func() time.Time
+	baseURL      string
+	oauthBaseURL string
+	httpClient   *http.Client
+	now          func() time.Time
 
 	mu      sync.Mutex
 	tokens  map[string]InstallationToken
@@ -46,6 +51,17 @@ func WithBaseURL(baseURL string) Option {
 	}
 }
 
+// WithOAuthBaseURL points the connector at a non-default OAuth host. GitHub
+// serves the user-token exchange from github.com rather than from the API host,
+// so it is a separate setting from WithBaseURL.
+func WithOAuthBaseURL(baseURL string) Option {
+	return func(c *Connector) {
+		if trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/"); trimmed != "" {
+			c.oauthBaseURL = trimmed
+		}
+	}
+}
+
 // WithClock overrides the time source, for deterministic token-expiry tests.
 func WithClock(now func() time.Time) Option {
 	return func(c *Connector) {
@@ -58,10 +74,11 @@ func WithClock(now func() time.Time) Option {
 // NewConnector builds a connector against api.github.com unless overridden.
 func NewConnector(opts ...Option) *Connector {
 	c := &Connector{
-		baseURL:    DefaultBaseURL,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
-		now:        time.Now,
-		tokens:     make(map[string]InstallationToken),
+		baseURL:      DefaultBaseURL,
+		oauthBaseURL: DefaultOAuthBaseURL,
+		httpClient:   &http.Client{Timeout: 30 * time.Second},
+		now:          time.Now,
+		tokens:       make(map[string]InstallationToken),
 	}
 	for _, opt := range opts {
 		opt(c)

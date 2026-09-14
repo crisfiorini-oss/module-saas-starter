@@ -10,6 +10,12 @@ import (
 // installation-repositories endpoint.
 const installationRepositoryPageSize = 100
 
+// maxInstallationRepositoryPages bounds the walk. Without it one connect call
+// could issue arbitrarily many sequential round trips. Exceeding it is reported
+// rather than silently truncated: a short list would hide repositories the
+// tenant selected, and they would read that as the App not granting them.
+const maxInstallationRepositoryPages = 20
+
 // InstallationRepository is one repository an installation grants access to.
 type InstallationRepository struct {
 	// "owner/name".
@@ -24,7 +30,7 @@ type InstallationRepository struct {
 // selected repositories does not silently see a truncated list.
 func (c *Connector) ListInstallationRepositories(ctx context.Context, token string) ([]InstallationRepository, error) {
 	var repos []InstallationRepository
-	for page := 1; ; page++ {
+	for page := 1; page <= maxInstallationRepositoryPages; page++ {
 		endpoint := fmt.Sprintf("%s/installation/repositories?per_page=%d&page=%d",
 			c.baseURL, installationRepositoryPageSize, page)
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -53,4 +59,6 @@ func (c *Connector) ListInstallationRepositories(ctx context.Context, token stri
 			return repos, nil
 		}
 	}
+	return nil, fmt.Errorf("list installation repositories: installation grants more than %d repositories",
+		maxInstallationRepositoryPages*installationRepositoryPageSize)
 }

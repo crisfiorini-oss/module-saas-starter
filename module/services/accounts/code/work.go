@@ -283,6 +283,13 @@ func doWork(ctx context.Context) (Clean, error) {
 		workspaceEnv("github-app", "GITHUB_APP_SLUG"),
 		workspaceEnv("github-app", "GITHUB_APP_WEBHOOK_SECRET"),
 	)
+	// The OAuth client is what attributes an installation to the person who
+	// installed it. Without it the host could only prove an installation exists,
+	// which is true of every tenant's installation, so onboarding stays off.
+	service.SetGitHubAppOAuth(
+		workspaceEnv("github-app", "GITHUB_APP_CLIENT_ID"),
+		workspaceEnv("github-app", "GITHUB_APP_CLIENT_SECRET"),
+	)
 	webhookPolicy := business.NewWebhookEndpointPolicy()
 	service.SetWebhookSecurity(vaultClient, webhookPolicy)
 	webAuthnRPID, webAuthnDisplayName, webAuthnOrigins, err := configuredWebAuthn()

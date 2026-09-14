@@ -253,7 +253,7 @@ func (h *datasourceConnectHandler) CompleteGitHubAppSetup(
 	if err := requireOrgAdmin(ctx, actorID, req.Msg.OrgId); err != nil {
 		return nil, translateGRPCError(err)
 	}
-	installation, err := h.svc.CompleteGitHubAppSetup(ctx, actorID, req.Msg.OrgId, req.Msg.State, req.Msg.InstallationId)
+	installation, err := h.svc.CompleteGitHubAppSetup(ctx, actorID, req.Msg.OrgId, req.Msg.State, req.Msg.InstallationId, req.Msg.Code)
 	if err != nil {
 		return nil, translateGRPCError(err)
 	}
