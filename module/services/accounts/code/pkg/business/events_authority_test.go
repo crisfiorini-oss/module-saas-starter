@@ -228,6 +228,24 @@ func TestModulePublishEventUncataloguedTypeRefused(t *testing.T) {
 	}
 }
 
+// TestModulePublishEventWithoutSubjectStillPublishes is the negative control on
+// the exact-target rule. A subject is required of a type some contribution
+// declared followable, never of publishing in general — and no composed type is
+// followable today, so refusing a subjectless publish here would break every
+// producer in the deployment.
+func TestModulePublishEventWithoutSubjectStillPublishes(t *testing.T) {
+	svc := newEventService(t, fakeTxStore{}, events.NewFakeTransport(nil, time.Second))
+	caller := business.ModuleCaller{PrincipalID: modulePrincSvc, BoundOrg: moduleTenantA}
+
+	env := demoEnvelope("scope.granted")
+	if env.GetSubject() != "" {
+		t.Fatal("test premise broken: the demo envelope must carry no subject")
+	}
+	if _, err := svc.ModulePublishEvent(context.Background(), caller, moduleTenantA, env); err != nil {
+		t.Fatalf("a type no contribution declares followable must publish without a subject: %v", err)
+	}
+}
+
 // TestModuleSubscribeOrderedOnPartitionedTypeAllowed guards the ordering gate
 // against over-rejecting: every catalogued type declares a partition today, so
 // an ordered subscription to one must still be accepted. The gate exists for

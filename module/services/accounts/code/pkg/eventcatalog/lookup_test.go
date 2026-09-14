@@ -43,6 +43,55 @@ func TestLookupPublishedReportsCatalogMembership(t *testing.T) {
 	}
 }
 
+// TestLookupFollowable pins the resolution the follows fan-out runs for every
+// delivered event: a type answers with the one resource type whose followers it
+// concerns, and the host then matches on (ResourceType, envelope subject). No
+// composed contribution declares a followable resource yet — that declaration is
+// a module's to make — so the table is substituted here rather than asserted
+// against the generated one.
+func TestLookupFollowable(t *testing.T) {
+	original := followableIndex
+	t.Cleanup(func() { followableIndex = original })
+	entry := FollowableResource{
+		ResourceType: "documents.entry",
+		Namespace:    "documents",
+		Events:       []string{"documents.entry.renamed", "documents.entry.version_minted"},
+	}
+	followableIndex = map[string]FollowableResource{
+		"documents.entry.renamed":        entry,
+		"documents.entry.version_minted": entry,
+	}
+
+	for _, eventType := range entry.Events {
+		declared, ok := LookupFollowable(eventType)
+		if !ok {
+			t.Fatalf("%q must resolve to its followable resource", eventType)
+		}
+		if declared.ResourceType != "documents.entry" {
+			t.Fatalf("%q resolved to resource type %q", eventType, declared.ResourceType)
+		}
+	}
+	if _, ok := LookupFollowable("documents.entry.ingested"); ok {
+		t.Fatal("an event no contribution declares followable must not resolve")
+	}
+}
+
+// TestFollowableIndexCoversTheComposedTable guards the wiring the test above
+// cannot: substituting the index would keep passing even if the generated
+// `followable` array were never indexed at all. The composed table is empty
+// today, so it is the invariant — every declared event resolves to its own
+// resource type — and not a count that has to hold.
+func TestFollowableIndexCoversTheComposedTable(t *testing.T) {
+	for _, declared := range followable {
+		for _, eventType := range declared.Events {
+			resolved, ok := LookupFollowable(eventType)
+			if !ok || resolved.ResourceType != declared.ResourceType {
+				t.Fatalf("composed followable event %q does not resolve to %q", eventType, declared.ResourceType)
+			}
+		}
+	}
+}
+
 // TestUnorderedPublishedTypesSelectsUndeclaredPartitions pins the selection the
 // Subscribe ordering gate depends on. The composed catalog declares a partition
 // on every type today, so the list is empty — the invariant, not the length, is

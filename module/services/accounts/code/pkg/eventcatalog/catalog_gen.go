@@ -18,6 +18,12 @@ type ConsumedEvent struct {
 	Delivery   string
 }
 
+type FollowableResource struct {
+	ResourceType string
+	Namespace    string
+	Events       []string
+}
+
 var published = [...]PublishedEvent{
 	{Type: "installation.created", Namespace: "installation", Schema: "saas/events/v1/events.proto#EventEnvelope", Major: 1, Visibility: "internal", Partition: "{tenant_id}", Retention: "30d"},
 	{Type: "installation.revoked", Namespace: "installation", Schema: "saas/events/v1/events.proto#EventEnvelope", Major: 1, Visibility: "internal", Partition: "{tenant_id}", Retention: "30d"},
@@ -166,10 +172,16 @@ var consumed = [...]ConsumedEvent{
 	{Type: "reference.console.viewed", Subscriber: "reference", Queue: "reference.ingest", Delivery: "unordered"},
 }
 
+var followable = [...]FollowableResource{}
+
 func Published() []PublishedEvent {
 	return append([]PublishedEvent(nil), published[:]...)
 }
 
 func Consumed() []ConsumedEvent {
 	return append([]ConsumedEvent(nil), consumed[:]...)
+}
+
+func Followable() []FollowableResource {
+	return append([]FollowableResource(nil), followable[:]...)
 }

@@ -264,6 +264,10 @@ consumes:
   - type: documents.entry.ingested
     queue: documents.ingest
     delivery: ordered
+follows:
+  - resource_type: documents.entry
+    events:
+      - documents.entry.ingested
 `)
 
 	options := Options{Events: []string{filepath.Join(moduleRoot, "documents.events.codefly.yaml")}}
@@ -278,6 +282,13 @@ consumes:
 	}
 	if !strings.Contains(string(files[EventGoOutput]), `Type: "documents.entry.ingested"`) {
 		t.Fatalf("the Go projection lost the contributed type:\n%s", files[EventGoOutput])
+	}
+	// The contribution is decoded with KnownFields(true), so this also proves the
+	// follows block is a field the loader accepts rather than one that fails the
+	// whole document — the unit tests above construct the struct directly and
+	// would not catch a missing yaml tag.
+	if !strings.Contains(string(files[EventGoOutput]), `{ResourceType: "documents.entry", Namespace: "documents", Events: []string{"documents.entry.ingested"}},`) {
+		t.Fatalf("the Go projection lost the contributed followable resource:\n%s", files[EventGoOutput])
 	}
 }
 

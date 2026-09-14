@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"accounts/pkg/eventcatalog"
 	"accounts/pkg/events"
 
 	"github.com/google/uuid"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -52,5 +55,29 @@ func (s *Service) publishLifecycleEvent(ctx context.Context, eventType EventType
 		PartitionKey:     tenant,
 		ActorPrincipalId: actor,
 	}
+	if err := requireFollowableSubject(envelope); err != nil {
+		return err
+	}
 	return s.eventTransport.Publish(ctx, moduleTx(ctx), envelope)
+}
+
+// requireFollowableSubject enforces the exact-target rule for a type some
+// contribution declared followable: the envelope subject carries the resource id
+// the host matches a follow on. Publishing one without a subject would not fail
+// anywhere downstream — it would match no follower and deliver nothing, which is
+// indistinguishable from a resource nobody follows — so the omission is refused
+// here instead. It binds both producers: a module publishing through
+// ModulePublishEvent, and this one, which carries no subject of its own and so
+// cannot publish a followable type until it is given one.
+func requireFollowableSubject(envelope *events.EventEnvelope) error {
+	if envelope.GetSubject() != "" {
+		return nil
+	}
+	declared, followable := eventcatalog.LookupFollowable(envelope.GetType())
+	if !followable {
+		return nil
+	}
+	return status.Errorf(codes.InvalidArgument,
+		"event type %q is declared followable for resource type %q, so its subject must carry the resource id",
+		envelope.GetType(), declared.ResourceType)
 }

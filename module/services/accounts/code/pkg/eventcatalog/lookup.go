@@ -32,6 +32,32 @@ func LookupPublished(eventType string) (PublishedEvent, bool) {
 	return e, ok
 }
 
+// followableIndex resolves an event type to the followable resource it reports a
+// change to. Compose keeps the mapping single-valued — an event may be declared
+// followable by at most one resource type — so this is a function rather than a
+// multimap, which is what lets a follow be matched on one (resource_type,
+// subject) pair.
+var followableIndex = func() map[string]FollowableResource {
+	m := make(map[string]FollowableResource, len(followable))
+	for _, f := range followable {
+		for _, eventType := range f.Events {
+			m[eventType] = f
+		}
+	}
+	return m
+}()
+
+// LookupFollowable returns the followable resource an event type reports a change
+// to, and whether the type is declared followable at all. The target instance is
+// the envelope subject: the host matches a follow on (ResourceType, subject) and
+// never decodes the payload, so a declared followable event carries no usable
+// target without one — which is why an empty subject is refused at publish time
+// rather than silently matching no follower.
+func LookupFollowable(eventType string) (FollowableResource, bool) {
+	f, ok := followableIndex[eventType]
+	return f, ok
+}
+
 // IsInternalPublished reports whether the event type is a published type declared
 // with internal visibility — an intra-platform event that must never be delivered
 // to a subscriber principal. A type absent from the catalog is not internal (only

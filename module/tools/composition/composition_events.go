@@ -65,12 +65,13 @@ func validatePartitionTemplate(eventType, template string) error {
 // and merged into the base-manifest-tracked event catalog exactly like a
 // permissions contribution.
 type EventsContribution struct {
-	Schema    string           `yaml:"schema"`
-	Namespace string           `yaml:"namespace"`
-	Queues    []string         `yaml:"queues"`
-	Publishes []PublishedEvent `yaml:"publishes"`
-	Consumes  []ConsumedEvent  `yaml:"consumes"`
-	Owner     string           `yaml:"-"`
+	Schema    string               `yaml:"schema"`
+	Namespace string               `yaml:"namespace"`
+	Queues    []string             `yaml:"queues"`
+	Publishes []PublishedEvent     `yaml:"publishes"`
+	Consumes  []ConsumedEvent      `yaml:"consumes"`
+	Follows   []FollowableResource `yaml:"follows"`
+	Owner     string               `yaml:"-"`
 	// BaseOwned marks a contribution shipped by the module that owns the
 	// reserved-namespace list, which is what lets it publish under one.
 	BaseOwned bool `yaml:"-"`
@@ -90,10 +91,21 @@ type ConsumedEvent struct {
 	Delivery string `yaml:"delivery"`
 }
 
+// FollowableResource is one noun of the declaring module that a person may
+// follow, together with the committed changes worth notifying a follower about.
+// The host matches a delivery on (ResourceType, envelope subject) and never
+// decodes the payload, which is what keeps the fan-out free of any
+// owner-specific knowledge.
+type FollowableResource struct {
+	ResourceType string   `yaml:"resource_type"`
+	Events       []string `yaml:"events"`
+}
+
 type eventCatalog struct {
 	Schema    string                `json:"schema"`
 	Publishes []eventCatalogPublish `json:"publishes"`
 	Consumes  []eventCatalogConsume `json:"consumes"`
+	Follows   []eventCatalogFollow  `json:"follows"`
 }
 
 type eventCatalogPublish struct {
@@ -120,6 +132,12 @@ type eventCatalogConsume struct {
 	Delivery   string `json:"delivery"`
 }
 
+type eventCatalogFollow struct {
+	ResourceType string   `json:"resource_type"`
+	Namespace    string   `json:"namespace"`
+	Events       []string `json:"events"`
+}
+
 // consumedKey identifies one subscription: a namespace consuming one event type
 // on one of its queues. It is the uniqueness key buildEventCatalog enforces, and
 // it matches the tuple renderAsyncAPI keys its receive operations on.
@@ -131,12 +149,15 @@ type consumedKey struct {
 
 // buildEventCatalog validates every events contribution and merges them into the
 // deterministic catalog. It fails compose on namespace-ownership, unresolved
-// schema, duplicate type, unregistered or undeclared-queue consumes, and any
-// breaking field change against the previously generated catalog.
+// schema, duplicate type, unregistered or undeclared-queue consumes, a follows
+// declaration that reaches outside the contribution's own tenant-visible facts,
+// and any breaking field change against the previously generated catalog.
 func buildEventCatalog(contributions []EventsContribution, manifest modulepackage.Manifest, protoRoot string, prior eventCatalog) (eventCatalog, error) {
-	catalog := eventCatalog{Schema: eventsCatalogSchema, Publishes: []eventCatalogPublish{}, Consumes: []eventCatalogConsume{}}
+	catalog := eventCatalog{Schema: eventsCatalogSchema, Publishes: []eventCatalogPublish{}, Consumes: []eventCatalogConsume{}, Follows: []eventCatalogFollow{}}
 	namespaces := map[string]struct{}{}
 	publishedTypes := map[string]struct{}{}
+	followedResources := map[string]struct{}{}
+	followedEvents := map[string]struct{}{}
 	priorByType := map[string]eventCatalogPublish{}
 	for _, entry := range prior.Publishes {
 		priorByType[entry.Type] = entry
@@ -170,6 +191,11 @@ func buildEventCatalog(contributions []EventsContribution, manifest modulepackag
 			declaredQueues[queue] = struct{}{}
 		}
 
+		// declaredHere is this contribution's own published surface, keyed to the
+		// visibility each type declared. It is what a follows block may draw from,
+		// which is how "a module cannot declare follows over another namespace's
+		// facts" becomes structural rather than a second lookup.
+		declaredHere := map[string]string{}
 		for _, published := range contribution.Publishes {
 			if !eventTypePattern.MatchString(published.Type) {
 				return eventCatalog{}, fmt.Errorf("event type %q is not a valid <namespace>.<aggregate>.<event> name", published.Type)
@@ -195,6 +221,7 @@ func buildEventCatalog(contributions []EventsContribution, manifest modulepackag
 				return eventCatalog{}, err
 			}
 			publishedTypes[published.Type] = struct{}{}
+			declaredHere[published.Type] = published.Visibility
 			catalog.Publishes = append(catalog.Publishes, eventCatalogPublish{
 				Type:       published.Type,
 				Namespace:  contribution.Namespace,
@@ -204,6 +231,55 @@ func buildEventCatalog(contributions []EventsContribution, manifest modulepackag
 				Partition:  published.Partition,
 				Retention:  published.Retention,
 				Fields:     fields,
+			})
+		}
+
+		// The platform namespace is refused to module principals, so a resource
+		// under it could be followed by nobody the follow path serves. Refusing the
+		// declaration keeps the reservation meaning one thing on every side of the
+		// contribution, publish and consume included.
+		if len(contribution.Follows) > 0 && isReserved(manifest.ReservedNamespaces, contribution.Namespace) {
+			return eventCatalog{}, fmt.Errorf("events namespace %q is reserved and may not declare followable resources", contribution.Namespace)
+		}
+		for _, followable := range contribution.Follows {
+			if !logicalIDPattern.MatchString(followable.ResourceType) {
+				return eventCatalog{}, fmt.Errorf("followable resource type %q is not a valid logical id", followable.ResourceType)
+			}
+			if _, duplicate := followedResources[followable.ResourceType]; duplicate {
+				return eventCatalog{}, fmt.Errorf("followable resource type %q is declared by more than one contribution", followable.ResourceType)
+			}
+			followedResources[followable.ResourceType] = struct{}{}
+			if len(followable.Events) == 0 {
+				return eventCatalog{}, fmt.Errorf("followable resource type %q declares no events", followable.ResourceType)
+			}
+			events := make([]string, 0, len(followable.Events))
+			for _, eventType := range followable.Events {
+				visibility, published := declaredHere[eventType]
+				if !published {
+					return eventCatalog{}, fmt.Errorf("followable resource type %q declares event %q that namespace %q does not publish", followable.ResourceType, eventType, contribution.Namespace)
+				}
+				// An internal event is short-circuited by the relay before any
+				// subscriber sees it, and an external one is the outbound-webhook
+				// spine rather than a tenant-visible fact. Only a tenant event can
+				// actually reach the fan-out that a follower's inbox item comes from.
+				if visibility != "tenant" {
+					return eventCatalog{}, fmt.Errorf("followable resource type %q declares event %q with visibility %q; a followable event must be tenant-visible", followable.ResourceType, eventType, visibility)
+				}
+				// The host matches a delivery on (resource_type, envelope subject),
+				// and a subject is one resource's id. Two resource types over one
+				// event would ask that id to belong to both, so the declaration that
+				// resolves an event to its target stays single-valued.
+				if _, duplicate := followedEvents[eventType]; duplicate {
+					return eventCatalog{}, fmt.Errorf("event %q is declared followable by more than one resource type", eventType)
+				}
+				followedEvents[eventType] = struct{}{}
+				events = append(events, eventType)
+			}
+			sort.Strings(events)
+			catalog.Follows = append(catalog.Follows, eventCatalogFollow{
+				ResourceType: followable.ResourceType,
+				Namespace:    contribution.Namespace,
+				Events:       events,
 			})
 		}
 
@@ -275,7 +351,25 @@ func buildEventCatalog(contributions []EventsContribution, manifest modulepackag
 		}
 		return left.Delivery < right.Delivery
 	})
+	// Resource types are unique across contributions, so this comparator is total
+	// for the same reason the Publishes one is.
+	sort.Slice(catalog.Follows, func(i, j int) bool {
+		return catalog.Follows[i].ResourceType < catalog.Follows[j].ResourceType
+	})
 	return catalog, nil
+}
+
+// followableIndex resolves a published event type to the followable resource it
+// targets. It is a function, not a multimap, because buildEventCatalog refuses a
+// second resource type over one event.
+func followableIndex(catalog eventCatalog) map[string]string {
+	index := map[string]string{}
+	for _, follow := range catalog.Follows {
+		for _, eventType := range follow.Events {
+			index[eventType] = follow.ResourceType
+		}
+	}
+	return index
 }
 
 // checkBreakingChange reuses the CONTRACT_VERSIONING.md rule that a field can
@@ -437,6 +531,7 @@ func renderEventCatalogGo(catalog eventCatalog) string {
 	body.WriteString("// Code generated by module-compose. DO NOT EDIT.\npackage eventcatalog\n\n")
 	body.WriteString("type PublishedEvent struct {\n\tType string\n\tNamespace string\n\tSchema string\n\tMajor int\n\tVisibility string\n\tPartition string\n\tRetention string\n}\n\n")
 	body.WriteString("type ConsumedEvent struct {\n\tType string\n\tSubscriber string\n\tQueue string\n\tDelivery string\n}\n\n")
+	body.WriteString("type FollowableResource struct {\n\tResourceType string\n\tNamespace string\n\tEvents []string\n}\n\n")
 	body.WriteString("var published = [...]PublishedEvent{\n")
 	for _, entry := range catalog.Publishes {
 		fmt.Fprintf(&body, "\t{Type: %q, Namespace: %q, Schema: %q, Major: %d, Visibility: %q, Partition: %q, Retention: %q},\n",
@@ -447,7 +542,18 @@ func renderEventCatalogGo(catalog eventCatalog) string {
 		fmt.Fprintf(&body, "\t{Type: %q, Subscriber: %q, Queue: %q, Delivery: %q},\n",
 			entry.Type, entry.Subscriber, entry.Queue, entry.Delivery)
 	}
-	body.WriteString("}\n\nfunc Published() []PublishedEvent {\n\treturn append([]PublishedEvent(nil), published[:]...)\n}\n\nfunc Consumed() []ConsumedEvent {\n\treturn append([]ConsumedEvent(nil), consumed[:]...)\n}\n")
+	body.WriteString("}\n\nvar followable = [...]FollowableResource{\n")
+	for _, entry := range catalog.Follows {
+		fmt.Fprintf(&body, "\t{ResourceType: %q, Namespace: %q, Events: []string{", entry.ResourceType, entry.Namespace)
+		for index, eventType := range entry.Events {
+			if index > 0 {
+				body.WriteString(", ")
+			}
+			fmt.Fprintf(&body, "%q", eventType)
+		}
+		body.WriteString("}},\n")
+	}
+	body.WriteString("}\n\nfunc Published() []PublishedEvent {\n\treturn append([]PublishedEvent(nil), published[:]...)\n}\n\nfunc Consumed() []ConsumedEvent {\n\treturn append([]ConsumedEvent(nil), consumed[:]...)\n}\n\nfunc Followable() []FollowableResource {\n\treturn append([]FollowableResource(nil), followable[:]...)\n}\n")
 	return body.String()
 }
 
@@ -480,6 +586,7 @@ type asyncAPIChannel struct {
 	Visibility string                 `json:"x-visibility"`
 	Partition  string                 `json:"x-partition,omitempty"`
 	Retention  string                 `json:"x-retention,omitempty"`
+	Followable string                 `json:"x-followable-resource,omitempty"`
 }
 
 type asyncAPIRef struct {
@@ -545,6 +652,7 @@ func renderAsyncAPI(catalog eventCatalog) ([]byte, error) {
 	// away. Keys are tracked by the ref they came from: the same ref reaching the
 	// same key is reuse, a different ref reaching it is a conflict.
 	schemaKeySource := map[string]string{}
+	followable := followableIndex(catalog)
 	for _, published := range catalog.Publishes {
 		schemaKey := sanitizeComponentKey(published.Schema)
 		if source, exists := schemaKeySource[schemaKey]; exists {
@@ -568,6 +676,7 @@ func renderAsyncAPI(catalog eventCatalog) ([]byte, error) {
 			Visibility: published.Visibility,
 			Partition:  published.Partition,
 			Retention:  published.Retention,
+			Followable: followable[published.Type],
 		}
 		doc.Operations["send:"+published.Type] = asyncAPIOperation{
 			Action:  "send",
@@ -643,6 +752,7 @@ func renderEventDocs(catalog eventCatalog) []byte {
 	for _, consumed := range catalog.Consumes {
 		consumersByType[consumed.Type] = append(consumersByType[consumed.Type], consumed)
 	}
+	followable := followableIndex(catalog)
 
 	var body strings.Builder
 	body.WriteString("# Event communication\n\n")
@@ -665,6 +775,9 @@ func renderEventDocs(catalog eventCatalog) []byte {
 		}
 		if published.Retention != "" {
 			fmt.Fprintf(&body, "- **Retention:** %s\n", published.Retention)
+		}
+		if resourceType := followable[published.Type]; resourceType != "" {
+			fmt.Fprintf(&body, "- **Follows:** `%s` (target is the envelope subject)\n", resourceType)
 		}
 		consumers := consumersByType[published.Type]
 		if len(consumers) == 0 {

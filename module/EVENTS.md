@@ -156,6 +156,14 @@ consumes:
 - **Breaking-change gate** — removing or re-typing a field requires a major bump,
   reusing the [CONTRACT_VERSIONING.md](./CONTRACT_VERSIONING.md) compatibility
   rules. A removed field without a major bump fails compose.
+- **Follows are the contribution's own tenant facts** — an optional `follows`
+  block names a resource type of this module and the published events worth
+  notifying a follower about. Every named event must be published by the *same*
+  contribution and declared `visibility: tenant`; the `resource_type` is unique
+  across contributions, and no event may be followable under two of them. The
+  target is the envelope `subject`, so publishing one of these events with an
+  empty `subject` is refused at publish time rather than silently matching
+  nobody. See [FOLLOWS.md](./FOLLOWS.md).
 
 Generated projections mirror the typed audit registry: Go typed constants
 (`services/accounts/code/pkg/eventcatalog/catalog_gen.go`), an **AsyncAPI 3**

@@ -38,6 +38,22 @@
           "delivery": {"enum": ["ordered", "unordered"]}
         }
       }
+    },
+    "follows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["resource_type", "events"],
+        "properties": {
+          "resource_type": {"type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$"},
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z0-9_]+)+$"}
+          }
+        }
+      }
     }
   }
 }

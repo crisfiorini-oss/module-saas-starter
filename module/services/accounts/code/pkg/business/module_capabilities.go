@@ -853,6 +853,9 @@ func (s *Service) ModulePublishEvent(ctx context.Context, caller ModuleCaller, t
 	if !inCatalog {
 		return "", status.Errorf(codes.FailedPrecondition, "event type %q is not declared in this deployment's event catalog; add it to the module's events contribution and recompose", envelope.GetType())
 	}
+	if err := requireFollowableSubject(envelope); err != nil {
+		return "", err
+	}
 	// The declared partition template is the ordering domain, and it is what a
 	// caller that omits the key gets. Ordering is not free — publish_domain_event
 	// holds a transaction-scoped advisory lock on the partition until the
