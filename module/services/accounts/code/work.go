@@ -20,6 +20,7 @@ import (
 	"accounts/pkg/email"
 	"accounts/pkg/githubconnector"
 	"accounts/pkg/infra"
+	"accounts/pkg/eventcatalog"
 	"accounts/pkg/jobs"
 	"accounts/pkg/metrics"
 	"accounts/pkg/permissionsplugin"
@@ -208,6 +209,37 @@ func doWork(ctx context.Context) (Clean, error) {
 	)
 	service.SetModuleEventTransport(eventTransport)
 	eventRelayWorker := infra.NewEventRelayWorker(eventTransport, 0)
+
+	// The follow bridge (FOLLOWS.md) is host-internal, which is what keeps it
+	// inside the boundary: the composed catalog declares which resources are
+	// followable, the host subscribes itself over exactly those types on its own
+	// reserved queue, and the worker resolves access through the store directly
+	// rather than through a module-facing RPC. Declaring nothing leaves every
+	// piece of this inert.
+	declared := eventcatalog.Followable()
+	followables := make([]business.FollowableResource, 0, len(declared))
+	for _, followable := range declared {
+		followables = append(followables, business.FollowableResource{
+			ResourceType: followable.ResourceType,
+			Events:       followable.Events,
+		})
+	}
+	service.SetFollowables(followables)
+	// Materialization is idempotent, so a restart converges on the rows that
+	// exist. It fails startup for the same reason VerifyEventWiring does: a host
+	// with no subscription receives no followable event, and that loss is
+	// invisible at runtime.
+	if err := service.MaterializeFollowSubscriptions(ctx); err != nil {
+		return nil, err
+	}
+	followFanoutWorker, err := jobs.NewWorker(jobs.WorkerConfig{
+		Store:   jobStore,
+		Queue:   business.FollowFanoutQueue,
+		Handler: service.FollowFanoutHandler(),
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	// Fail fast if a deployment ever ends up with live subscriptions but no
 	// transport: without one, every publish is a silent no-op and subscribers
@@ -936,6 +968,7 @@ func doWork(ctx context.Context) (Clean, error) {
 	privacyWorker.Start(ctx)
 	datasourceDeliveryWorker.Start(ctx)
 	eventRelayWorker.Start(ctx)
+	followFanoutWorker.Start(ctx)
 
 	return func() {
 		closeCustody()
@@ -1006,6 +1039,12 @@ func doWork(ctx context.Context) (Clean, error) {
 		shutdownCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 		if err := eventRelayWorker.Shutdown(shutdownCtx); err != nil {
 			sw.Warn("domain-event relay worker shutdown timed out", wool.ErrField(err))
+		}
+		cancel()
+		sw.Info("stopping follow fan-out worker")
+		shutdownCtx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+		if err := followFanoutWorker.Shutdown(shutdownCtx); err != nil {
+			sw.Warn("follow fan-out worker shutdown timed out", wool.ErrField(err))
 		}
 		cancel()
 		sw.Info("closing outbound webhook projection database pool")

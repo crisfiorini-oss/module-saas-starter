@@ -506,6 +506,17 @@ type Store interface {
 	CreateResourceFollow(ctx context.Context, follow *ResourceFollow) error
 	RevokeResourceFollow(ctx context.Context, userID, resourceType, resourceID string) error
 
+	// ListResourceFollowers answers who currently follows one resource. It reads
+	// across users, so it runs under WithControlPlane rather than any one
+	// follower's transaction; the result is only a candidate set, and each
+	// candidate's access and follow are rechecked before anything is written.
+	ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID string) ([]string, error)
+	// ResourceFollowIsLive re-reads one follower's own follow. It runs inside the
+	// follower's WithUserTx alongside the notification write, which is what makes
+	// a follow revoked before that read suppress the item and stops a replay
+	// resurrecting a removed follow.
+	ResourceFollowIsLive(ctx context.Context, orgID, userID, resourceType, resourceID string) (bool, error)
+
 	// MFA — exposed on the main Store interface so the auth layer's
 	// requireMFA gate can check enrollment without casting to MFAStore.
 	HasVerifiedMFA(ctx context.Context, userID string) (bool, error)

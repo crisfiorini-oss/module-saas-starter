@@ -36,6 +36,49 @@ func (s *PostgresStore) CreateResourceFollow(ctx context.Context, follow *busine
 	).Scan(&follow.ID)
 }
 
+// ListResourceFollowers returns the users who currently follow one resource.
+// The read spans users, so it runs under the control-plane role; RLS on
+// resource_follows keys on the follower, which would otherwise reduce this to
+// whichever single user's transaction happened to be open. Ordering is stable so
+// a fan-out processes followers in the same order on every attempt.
+func (s *PostgresStore) ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID string) ([]string, error) {
+	q := s.getQueryExecutor(ctx)
+	rows, err := q.Query(ctx, `
+		SELECT user_id FROM public.resource_follows
+		WHERE org_id = $1 AND resource_type = $2 AND resource_id = $3
+		  AND revoked_at IS NULL
+		ORDER BY created_at, user_id`,
+		orgID, resourceType, resourceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var followers []string
+	for rows.Next() {
+		var userID string
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		followers = append(followers, userID)
+	}
+	return followers, rows.Err()
+}
+
+// ResourceFollowIsLive reports whether one follower's follow is still live. It
+// is called inside that follower's own transaction, so the RLS policy is a
+// second enforcement boundary on the user_id this filters by.
+func (s *PostgresStore) ResourceFollowIsLive(ctx context.Context, orgID, userID, resourceType, resourceID string) (bool, error) {
+	q := s.getQueryExecutor(ctx)
+	var live bool
+	err := q.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM public.resource_follows
+			WHERE org_id = $1 AND user_id = $2 AND resource_type = $3 AND resource_id = $4
+			  AND revoked_at IS NULL)`,
+		orgID, userID, resourceType, resourceID).Scan(&live)
+	return live, err
+}
+
 // RevokeResourceFollow soft-revokes the caller's live follow. Revocation is a
 // fact with a time because the delivery suppression rule is defined against it;
 // a delete would lose that. Revoking a follow that is absent or already revoked

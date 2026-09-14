@@ -14,10 +14,18 @@ ALTER TABLE public.notifications
 
 -- A reference is whole or absent. A half-set reference would be unfilterable,
 -- which is the one thing the reference exists for.
+--
+-- Both branches are written NULL-safe on purpose. A CHECK rejects only a FALSE
+-- result, and `length(NULL) > 0` is NULL, so the shorter
+-- `length(resource_type) > 0 AND length(resource_id) > 0` evaluates to NULL for
+-- exactly the half-set rows this exists to refuse — and admits every one of
+-- them. The explicit IS NOT NULL tests keep the branch FALSE rather than
+-- unknown.
 ALTER TABLE public.notifications
     ADD CONSTRAINT notifications_resource_reference
         CHECK ((resource_type IS NULL AND resource_id IS NULL)
-            OR (length(resource_type) > 0 AND length(resource_id) > 0));
+            OR (resource_type IS NOT NULL AND resource_id IS NOT NULL
+                AND length(resource_type) > 0 AND length(resource_id) > 0));
 
 -- Ordinary notifications carry no reference and stay out of the index entirely,
 -- so it costs nothing on the existing inbox path.
