@@ -218,6 +218,80 @@ func (h *datasourceConnectHandler) DeleteSource(
 // datasourceSourceToProto projects the domain Source onto its non-secret proto
 // representation. Credential and webhook-secret envelopes are deliberately not
 // mapped — the wire type has no field for them.
+func (h *datasourceConnectHandler) BeginGitHubAppSetup(
+	ctx context.Context,
+	req *connect.Request[gen.BeginGitHubAppSetupRequest],
+) (*connect.Response[gen.BeginGitHubAppSetupResponse], error) {
+	ctx = connectCtx(ctx, req.Header())
+	actorID, err := callerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireOrgAdmin(ctx, actorID, req.Msg.OrgId); err != nil {
+		return nil, translateGRPCError(err)
+	}
+	handle, err := h.svc.BeginGitHubAppSetup(ctx, actorID, req.Msg.OrgId)
+	if err != nil {
+		return nil, translateGRPCError(err)
+	}
+	return connect.NewResponse(&gen.BeginGitHubAppSetupResponse{
+		InstallUrl: handle.InstallURL,
+		State:      handle.State,
+		ExpiresAt:  timestamppb.New(handle.ExpiresAt),
+	}), nil
+}
+
+func (h *datasourceConnectHandler) CompleteGitHubAppSetup(
+	ctx context.Context,
+	req *connect.Request[gen.CompleteGitHubAppSetupRequest],
+) (*connect.Response[gen.CompleteGitHubAppSetupResponse], error) {
+	ctx = connectCtx(ctx, req.Header())
+	actorID, err := callerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireOrgAdmin(ctx, actorID, req.Msg.OrgId); err != nil {
+		return nil, translateGRPCError(err)
+	}
+	installation, err := h.svc.CompleteGitHubAppSetup(ctx, actorID, req.Msg.OrgId, req.Msg.State, req.Msg.InstallationId)
+	if err != nil {
+		return nil, translateGRPCError(err)
+	}
+	repositories := make([]*gen.GitHubAppRepository, 0, len(installation.Repositories))
+	for _, repository := range installation.Repositories {
+		repositories = append(repositories, &gen.GitHubAppRepository{
+			Repo:             repository.Repo,
+			DefaultBranch:    repository.DefaultBranch,
+			AlreadyConnected: repository.AlreadyConnected,
+		})
+	}
+	return connect.NewResponse(&gen.CompleteGitHubAppSetupResponse{
+		InstallationId: installation.InstallationID,
+		Repositories:   repositories,
+	}), nil
+}
+
+func (h *datasourceConnectHandler) MigrateGitHubSourceToApp(
+	ctx context.Context,
+	req *connect.Request[gen.MigrateGitHubSourceToAppRequest],
+) (*connect.Response[gen.MigrateGitHubSourceToAppResponse], error) {
+	ctx = connectCtx(ctx, req.Header())
+	actorID, err := callerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := requireOrgAdmin(ctx, actorID, req.Msg.OrgId); err != nil {
+		return nil, translateGRPCError(err)
+	}
+	source, err := h.svc.MigrateGitHubSourceToApp(ctx, actorID, req.Msg.OrgId, req.Msg.Id)
+	if err != nil {
+		return nil, translateGRPCError(err)
+	}
+	return connect.NewResponse(&gen.MigrateGitHubSourceToAppResponse{
+		Datasource: datasourceSourceToProto(source),
+	}), nil
+}
+
 func datasourceSourceToProto(source *business.DatasourceSource) *gen.Datasource {
 	out := &gen.Datasource{
 		Id:                 source.ID,

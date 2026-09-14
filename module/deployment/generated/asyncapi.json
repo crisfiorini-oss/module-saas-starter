@@ -361,6 +361,28 @@
       "x-visibility": "external",
       "x-retention": "30d"
     },
+    "saas.datasource.github_app.setup_completed": {
+      "address": "saas.datasource.github_app.setup_completed",
+      "title": "saas.datasource.github_app.setup_completed",
+      "messages": {
+        "envelope": {
+          "$ref": "#/components/messages/saas.datasource.github_app.setup_completed"
+        }
+      },
+      "x-visibility": "external",
+      "x-retention": "30d"
+    },
+    "saas.datasource.github_app.setup_started": {
+      "address": "saas.datasource.github_app.setup_started",
+      "title": "saas.datasource.github_app.setup_started",
+      "messages": {
+        "envelope": {
+          "$ref": "#/components/messages/saas.datasource.github_app.setup_started"
+        }
+      },
+      "x-visibility": "external",
+      "x-retention": "30d"
+    },
     "saas.datasource.snapshot_too_large": {
       "address": "saas.datasource.snapshot_too_large",
       "title": "saas.datasource.snapshot_too_large",
@@ -1818,6 +1840,20 @@
       },
       "title": "saas publishes saas.datasource.force_push_reconciled"
     },
+    "send:saas.datasource.github_app.setup_completed": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/saas.datasource.github_app.setup_completed"
+      },
+      "title": "saas publishes saas.datasource.github_app.setup_completed"
+    },
+    "send:saas.datasource.github_app.setup_started": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/saas.datasource.github_app.setup_started"
+      },
+      "title": "saas publishes saas.datasource.github_app.setup_started"
+    },
     "send:saas.datasource.snapshot_too_large": {
       "action": "send",
       "channel": {
@@ -2818,6 +2854,20 @@
       "saas.datasource.force_push_reconciled": {
         "name": "saas.datasource.force_push_reconciled",
         "title": "saas.datasource.force_push_reconciled",
+        "payload": {
+          "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
+        }
+      },
+      "saas.datasource.github_app.setup_completed": {
+        "name": "saas.datasource.github_app.setup_completed",
+        "title": "saas.datasource.github_app.setup_completed",
+        "payload": {
+          "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
+        }
+      },
+      "saas.datasource.github_app.setup_started": {
+        "name": "saas.datasource.github_app.setup_started",
+        "title": "saas.datasource.github_app.setup_started",
         "payload": {
           "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
         }

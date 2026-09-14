@@ -3205,6 +3205,206 @@
       ]
     },
     {
+      "type": "saas.datasource.github_app.setup_completed",
+      "namespace": "saas",
+      "schema": "saas/events/v1/events.proto#EventEnvelope",
+      "major": 1,
+      "visibility": "external",
+      "retention": "30d",
+      "fields": [
+        {
+          "name": "id",
+          "number": 1,
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "number": 2,
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "number": 3,
+          "type": "string"
+        },
+        {
+          "name": "subject",
+          "number": 4,
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "number": 5,
+          "type": "google.protobuf.Timestamp"
+        },
+        {
+          "name": "specversion",
+          "number": 6,
+          "type": "string"
+        },
+        {
+          "name": "datacontenttype",
+          "number": 7,
+          "type": "string"
+        },
+        {
+          "name": "dataschema",
+          "number": 8,
+          "type": "string"
+        },
+        {
+          "name": "data",
+          "number": 9,
+          "type": "bytes"
+        },
+        {
+          "name": "tenant_id",
+          "number": 20,
+          "type": "string"
+        },
+        {
+          "name": "boundary_id",
+          "number": 21,
+          "type": "string"
+        },
+        {
+          "name": "partition_key",
+          "number": 22,
+          "type": "string"
+        },
+        {
+          "name": "correlation_id",
+          "number": 23,
+          "type": "string"
+        },
+        {
+          "name": "causation_id",
+          "number": 24,
+          "type": "string"
+        },
+        {
+          "name": "actor_principal_id",
+          "number": 25,
+          "type": "string"
+        },
+        {
+          "name": "owner_principal_id",
+          "number": 26,
+          "type": "string"
+        },
+        {
+          "name": "traceparent",
+          "number": 27,
+          "type": "string"
+        },
+        {
+          "name": "schema_version",
+          "number": 28,
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "type": "saas.datasource.github_app.setup_started",
+      "namespace": "saas",
+      "schema": "saas/events/v1/events.proto#EventEnvelope",
+      "major": 1,
+      "visibility": "external",
+      "retention": "30d",
+      "fields": [
+        {
+          "name": "id",
+          "number": 1,
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "number": 2,
+          "type": "string"
+        },
+        {
+          "name": "source",
+          "number": 3,
+          "type": "string"
+        },
+        {
+          "name": "subject",
+          "number": 4,
+          "type": "string"
+        },
+        {
+          "name": "time",
+          "number": 5,
+          "type": "google.protobuf.Timestamp"
+        },
+        {
+          "name": "specversion",
+          "number": 6,
+          "type": "string"
+        },
+        {
+          "name": "datacontenttype",
+          "number": 7,
+          "type": "string"
+        },
+        {
+          "name": "dataschema",
+          "number": 8,
+          "type": "string"
+        },
+        {
+          "name": "data",
+          "number": 9,
+          "type": "bytes"
+        },
+        {
+          "name": "tenant_id",
+          "number": 20,
+          "type": "string"
+        },
+        {
+          "name": "boundary_id",
+          "number": 21,
+          "type": "string"
+        },
+        {
+          "name": "partition_key",
+          "number": 22,
+          "type": "string"
+        },
+        {
+          "name": "correlation_id",
+          "number": 23,
+          "type": "string"
+        },
+        {
+          "name": "causation_id",
+          "number": 24,
+          "type": "string"
+        },
+        {
+          "name": "actor_principal_id",
+          "number": 25,
+          "type": "string"
+        },
+        {
+          "name": "owner_principal_id",
+          "number": 26,
+          "type": "string"
+        },
+        {
+          "name": "traceparent",
+          "number": 27,
+          "type": "string"
+        },
+        {
+          "name": "schema_version",
+          "number": 28,
+          "type": "uint32"
+        }
+      ]
+    },
+    {
       "type": "saas.datasource.snapshot_too_large",
       "namespace": "saas",
       "schema": "saas/events/v1/events.proto#EventEnvelope",

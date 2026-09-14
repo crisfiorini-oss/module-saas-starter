@@ -5,8 +5,13 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
-import type { Duration, EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_duration, file_google_protobuf_empty, file_google_protobuf_struct, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_empty } from "../../../google/protobuf/empty_pb";
+import type { Duration } from "../../../google/protobuf/duration_pb";
+import { file_google_protobuf_duration } from "../../../google/protobuf/duration_pb";
+import { file_google_protobuf_struct } from "../../../google/protobuf/struct_pb";
+import type { Timestamp } from "../../../google/protobuf/timestamp_pb";
+import { file_google_protobuf_timestamp } from "../../../google/protobuf/timestamp_pb";
 import type { ModuleMintRegistrationRequestSchema, ModuleMintRegistrationResponseSchema, ModuleMintWorkContextRequestSchema, ModuleMintWorkContextResponseSchema, SolutionMintRegistrationRequestSchema, SolutionMintRegistrationResponseSchema } from "./module_registration_pb";
 import { file_saas_accounts_v1_module_registration } from "./module_registration_pb";
 import type { EventEnvelope } from "../../events/v1/events_pb";

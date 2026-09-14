@@ -223,13 +223,18 @@ message AddGitHubSourceRequest {
       max_len: 255
     }];
   }
-  // Plaintext GitHub token (a PAT or a GitHub App installation token) used to
-  // read the repository. Encrypted through the SecretCipher at receipt; only its
-  // envelope reference is persisted.
-  string access_token = 6 [(buf.validate.field).string = {
-    min_len: 1
-    max_len: 1024
-  }];
+  // Plaintext, repository-scoped fine-grained GitHub PAT used to read the
+  // repository. Encrypted through the SecretCipher at receipt; only its envelope
+  // reference is persisted.
+  //
+  // Empty connects the source through the deployment's GitHub App instead: the
+  // host resolves the installation covering `repo` itself and mints a
+  // short-lived, repository-scoped installation token for every fetch, so no
+  // token is ever pasted or stored. That path requires this organization to
+  // have completed App setup (BeginGitHubAppSetup then CompleteGitHubAppSetup)
+  // for the installation covering `repo`, and is refused when no App is
+  // registered for the deployment.
+  string access_token = 6 [(buf.validate.field).string.max_len = 1024];
   // Plaintext shared secret GitHub signs push deliveries with
   // (X-Hub-Signature-256). Optional at creation; when omitted, live webhook
   // ingestion stays off until a later call supplies one. Encrypted at receipt.
@@ -359,6 +364,69 @@ message DeleteSourceRequest {
 }
 
 message DeleteSourceResponse {}
+
+// GitHubAppRepository is one repository a verified App installation grants this
+// host read access to.
+message GitHubAppRepository {
+  // "owner/name".
+  string repo = 1;
+  // The repository's default branch, so a client can offer it without a second
+  // round trip. Empty when GitHub reported none.
+  string default_branch = 2;
+  // True when this organization already connects this repository, so a client
+  // can present it as connected rather than offering it twice.
+  bool already_connected = 3;
+}
+
+message BeginGitHubAppSetupRequest {
+  string org_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message BeginGitHubAppSetupResponse {
+  // Where to send the browser to install the App and choose repositories. It
+  // carries the state below, and an installation that returns without it is
+  // refused.
+  string install_url = 1;
+  // One-time setup state, bound server-side to this organization and to the
+  // user who began the setup. Redeemable exactly once.
+  string state = 2;
+  // When the state stops being redeemable.
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message CompleteGitHubAppSetupRequest {
+  string org_id = 1 [(buf.validate.field).string.uuid = true];
+  // The state handed out by BeginGitHubAppSetup and echoed back through the
+  // redirect.
+  string state = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 255
+  }];
+  // The installation the redirect claims was installed. A claim, never
+  // authority: the host verifies it against GitHub as the App, and refuses one
+  // already bound to a different organization.
+  string installation_id = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 32
+    pattern: "^[0-9]+$"
+  }];
+}
+
+message CompleteGitHubAppSetupResponse {
+  // The installation the host verified and bound to this organization.
+  string installation_id = 1;
+  // Repositories that installation grants, each connectable with no token.
+  repeated GitHubAppRepository repositories = 2;
+}
+
+message MigrateGitHubSourceToAppRequest {
+  string org_id = 1 [(buf.validate.field).string.uuid = true];
+  string id = 2 [(buf.validate.field).string.uuid = true];
+}
+
+message MigrateGitHubSourceToAppResponse {
+  Datasource datasource = 1;
+}
 
 // DatasourceService is the tenant-facing surface a solution drives (directly or
 // through the generated SDK) to declare and operate connected datasources.
@@ -508,6 +576,83 @@ service DatasourceService {
       rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
       request_sensitivity: SENSITIVITY_INTERNAL
       response_sensitivity: SENSITIVITY_INTERNAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+  }
+  // BeginGitHubAppSetup mints a one-time setup state, bound to this
+  // organization and to the calling user, and returns the URL that installs the
+  // deployment's GitHub App on repositories the tenant picks. No credential is
+  // stored: the App's signing key is deployment custody.
+  rpc BeginGitHubAppSetup(BeginGitHubAppSetupRequest) returns (BeginGitHubAppSetupResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_ORG_ADMIN
+      resource_bindings: {
+        request_field: "org_id"
+        target: RESOURCE_TARGET_ORGANIZATION
+        lookup: RESOURCE_LOOKUP_DIRECT_ID
+      }
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {
+        events: "saas.datasource.github_app.setup_started"
+        emission: AUDIT_EMISSION_SUCCESS
+      }
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
+      request_sensitivity: SENSITIVITY_INTERNAL
+      response_sensitivity: SENSITIVITY_SECRET
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+  }
+  // CompleteGitHubAppSetup redeems that state exactly once and verifies the
+  // returned installation against GitHub as the App before binding it to the
+  // organization, so an installation id arriving from a browser redirect never
+  // claims a tenant on its own. It returns the repositories the installation
+  // grants.
+  rpc CompleteGitHubAppSetup(CompleteGitHubAppSetupRequest) returns (CompleteGitHubAppSetupResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_ORG_ADMIN
+      resource_bindings: {
+        request_field: "org_id"
+        target: RESOURCE_TARGET_ORGANIZATION
+        lookup: RESOURCE_LOOKUP_DIRECT_ID
+      }
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {
+        events: "saas.datasource.github_app.setup_completed"
+        emission: AUDIT_EMISSION_SUCCESS
+      }
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
+      request_sensitivity: SENSITIVITY_SECRET
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+  }
+  // MigrateGitHubSourceToApp re-points a PAT-backed source at the deployment's
+  // GitHub App in place, keeping the source's identity, path scope, boundary,
+  // grants, delivery cursor and audit history. The installation is resolved
+  // server-side from the repository the source already names, and the stored
+  // PAT is retired only once App access has been proven.
+  rpc MigrateGitHubSourceToApp(MigrateGitHubSourceToAppRequest) returns (MigrateGitHubSourceToAppResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_ORG_ADMIN
+      resource_bindings: {
+        request_field: "org_id"
+        target: RESOURCE_TARGET_ORGANIZATION
+        lookup: RESOURCE_LOOKUP_DIRECT_ID
+      }
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {
+        events: "saas.datasource.credential.updated"
+        emission: AUDIT_EMISSION_SUCCESS
+      }
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
+      request_sensitivity: SENSITIVITY_INTERNAL
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
       platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
     };
   }

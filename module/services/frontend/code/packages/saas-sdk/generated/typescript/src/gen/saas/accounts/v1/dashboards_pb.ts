@@ -5,8 +5,11 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv1";
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_struct, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_empty } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_struct } from "../../../google/protobuf/struct_pb";
+import type { Timestamp } from "../../../google/protobuf/timestamp_pb";
+import { file_google_protobuf_timestamp } from "../../../google/protobuf/timestamp_pb";
 import { file_saas_policy_v1_options } from "../../policy/v1/options_pb";
 import type { JsonObject, Message } from "@bufbuild/protobuf";
 

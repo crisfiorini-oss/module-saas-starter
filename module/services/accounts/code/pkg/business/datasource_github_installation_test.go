@@ -112,7 +112,7 @@ func newInstallationHarness(t *testing.T, api *fakeInstallationAPI) *installatio
 	producer := &recordingProducer{}
 	svc, audit := newDatasourceService(store, producer, nil)
 	svc.SetGitHubConnector(githubconnector.NewConnector(githubconnector.WithBaseURL(server.URL)))
-	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "whsec_app")
+	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "", "whsec_app")
 	return &installationHarness{svc: svc, store: store, api: api, producer: producer, audit: audit}
 }
 

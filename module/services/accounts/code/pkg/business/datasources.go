@@ -435,9 +435,12 @@ func (s *Service) SetDatasourceOAuth2RefreshFunc(fn OAuth2RefreshFunc) {
 	s.newOAuth2Refresh = fn
 }
 
-// AddGitHubSource registers a GitHub repository as a Source. The access token
-// (and optional webhook signing secret) are encrypted and stored only as
-// envelope references. The returned Source carries no credential material.
+// AddGitHubSource registers a GitHub repository as a Source. A supplied access
+// token is a repository-scoped fine-grained PAT; supplying none connects the
+// source through the deployment's GitHub App, whose installation is resolved
+// from the repository server-side. Either way the credential (and the optional
+// webhook signing secret) is encrypted and stored only as an envelope
+// reference, and the returned Source carries no credential material.
 func (s *Service) AddGitHubSource(ctx context.Context, actorID string, input AddGitHubSourceInput) (*DatasourceSource, error) {
 	w := wool.Get(ctx).In("AddGitHubSource")
 
@@ -452,14 +455,12 @@ func (s *Service) AddGitHubSource(ctx context.Context, actorID string, input Add
 	if err := requireBoundarySpec(input.BoundaryNodeID, input.CollectionLabel); err != nil {
 		return nil, w.Wrap(err)
 	}
-	if strings.TrimSpace(input.AccessToken) == "" {
-		return nil, w.NewError("access token is required")
-	}
 	if s.datasourceCipher == nil {
 		return nil, w.NewError("datasource secret cipher is not configured")
 	}
 
-	if err := s.validateGitHubSource(ctx, repo, input.Branch, input.AccessToken); err != nil {
+	credentialPlaintext, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, input.AccessToken)
+	if err != nil {
 		return nil, err
 	}
 
@@ -476,9 +477,9 @@ func (s *Service) AddGitHubSource(ctx context.Context, actorID string, input Add
 	nextReconcile := time.Now().UTC().Add(defaultDatasourceReconcileInterval)
 	source.NextReconcileAt = &nextReconcile
 
-	credentialRef, err := s.datasourceCipher.EncryptSecret(ctx, DatasourceConnectorSecretPurpose(source.ID), strings.TrimSpace(input.AccessToken))
+	credentialRef, err := s.datasourceCipher.EncryptSecret(ctx, DatasourceConnectorSecretPurpose(source.ID), credentialPlaintext)
 	if err != nil {
-		return nil, w.Wrapf(err, "encrypt access token")
+		return nil, w.Wrapf(err, "encrypt credential")
 	}
 	source.CredentialSecretRef = credentialRef
 

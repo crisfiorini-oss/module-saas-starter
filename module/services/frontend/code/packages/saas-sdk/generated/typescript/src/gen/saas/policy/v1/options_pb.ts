@@ -4,8 +4,8 @@
 
 import type { GenEnum, GenExtension, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv1";
 import { enumDesc, extDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv1";
-import type { MethodOptions } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
+import type { MethodOptions } from "../../../google/protobuf/descriptor_pb";
+import { file_google_protobuf_descriptor } from "../../../google/protobuf/descriptor_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**

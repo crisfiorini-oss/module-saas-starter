@@ -85,10 +85,13 @@
       "procedures": [
         "/saas.accounts.v1.DatasourceService/AddGitHubSource",
         "/saas.accounts.v1.DatasourceService/AddSource",
+        "/saas.accounts.v1.DatasourceService/BeginGitHubAppSetup",
+        "/saas.accounts.v1.DatasourceService/CompleteGitHubAppSetup",
         "/saas.accounts.v1.DatasourceService/DeleteSource",
         "/saas.accounts.v1.DatasourceService/GetDatasourceCatalog",
         "/saas.accounts.v1.DatasourceService/GetSource",
         "/saas.accounts.v1.DatasourceService/ListSources",
+        "/saas.accounts.v1.DatasourceService/MigrateGitHubSourceToApp",
         "/saas.accounts.v1.DatasourceService/SyncSource"
       ]
     },
@@ -2107,6 +2110,106 @@
       }
     },
     {
+      "procedure": "/saas.accounts.v1.DatasourceService/BeginGitHubAppSetup",
+      "service": "DatasourceService",
+      "full_service": "saas.accounts.v1.DatasourceService",
+      "method": "BeginGitHubAppSetup",
+      "input_type": "saas.accounts.v1.BeginGitHubAppSetupRequest",
+      "output_type": "saas.accounts.v1.BeginGitHubAppSetupResponse",
+      "client_streaming": false,
+      "server_streaming": false,
+      "deprecated": false,
+      "source_proto": "saas/accounts/v1/datasource.proto",
+      "protocols": [
+        "PROTOCOL_GRPC",
+        "PROTOCOL_CONNECT"
+      ],
+      "http_bindings": [],
+      "policy": {
+        "exposure": "EXPOSURE_AUTHENTICATED",
+        "tenant": "TENANT_REQUIREMENT_ORG_ADMIN",
+        "permissions": [],
+        "scopes": [],
+        "resource_bindings": [
+          {
+            "request_field": "org_id",
+            "target": "RESOURCE_TARGET_ORGANIZATION",
+            "lookup": "RESOURCE_LOOKUP_DIRECT_ID"
+          }
+        ],
+        "mfa": "MFA_REQUIREMENT_NONE",
+        "audit": {
+          "events": [
+            "saas.datasource.github_app.setup_started"
+          ],
+          "emission": "AUDIT_EMISSION_SUCCESS"
+        },
+        "idempotency": "IDEMPOTENCY_REQUIREMENT_FORBIDDEN",
+        "rate_limit": "RATE_LIMIT_CLASS_STANDARD_WRITE",
+        "request_sensitivity": "SENSITIVITY_INTERNAL",
+        "response_sensitivity": "SENSITIVITY_SECRET",
+        "platform_role": "PLATFORM_ROLE_REQUIREMENT_NONE",
+        "authentication_factor_attempt": false,
+        "conditions": []
+      },
+      "policy_tier": "org_admin",
+      "description": "Start GitHub App onboarding: mint a one-time, tenant-bound setup state and return the App's install URL.",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      }
+    },
+    {
+      "procedure": "/saas.accounts.v1.DatasourceService/CompleteGitHubAppSetup",
+      "service": "DatasourceService",
+      "full_service": "saas.accounts.v1.DatasourceService",
+      "method": "CompleteGitHubAppSetup",
+      "input_type": "saas.accounts.v1.CompleteGitHubAppSetupRequest",
+      "output_type": "saas.accounts.v1.CompleteGitHubAppSetupResponse",
+      "client_streaming": false,
+      "server_streaming": false,
+      "deprecated": false,
+      "source_proto": "saas/accounts/v1/datasource.proto",
+      "protocols": [
+        "PROTOCOL_GRPC",
+        "PROTOCOL_CONNECT"
+      ],
+      "http_bindings": [],
+      "policy": {
+        "exposure": "EXPOSURE_AUTHENTICATED",
+        "tenant": "TENANT_REQUIREMENT_ORG_ADMIN",
+        "permissions": [],
+        "scopes": [],
+        "resource_bindings": [
+          {
+            "request_field": "org_id",
+            "target": "RESOURCE_TARGET_ORGANIZATION",
+            "lookup": "RESOURCE_LOOKUP_DIRECT_ID"
+          }
+        ],
+        "mfa": "MFA_REQUIREMENT_NONE",
+        "audit": {
+          "events": [
+            "saas.datasource.github_app.setup_completed"
+          ],
+          "emission": "AUDIT_EMISSION_SUCCESS"
+        },
+        "idempotency": "IDEMPOTENCY_REQUIREMENT_FORBIDDEN",
+        "rate_limit": "RATE_LIMIT_CLASS_STANDARD_WRITE",
+        "request_sensitivity": "SENSITIVITY_SECRET",
+        "response_sensitivity": "SENSITIVITY_CONFIDENTIAL",
+        "platform_role": "PLATFORM_ROLE_REQUIREMENT_NONE",
+        "authentication_factor_attempt": false,
+        "conditions": []
+      },
+      "policy_tier": "org_admin",
+      "description": "Redeem a setup state once, verify the returned GitHub App installation server-side, and list the repositories it grants.",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      }
+    },
+    {
       "procedure": "/saas.accounts.v1.DatasourceService/DeleteSource",
       "service": "DatasourceService",
       "full_service": "saas.accounts.v1.DatasourceService",
@@ -2289,6 +2392,56 @@
       },
       "policy_tier": "org_member",
       "description": "List the org's connected datasources.",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      }
+    },
+    {
+      "procedure": "/saas.accounts.v1.DatasourceService/MigrateGitHubSourceToApp",
+      "service": "DatasourceService",
+      "full_service": "saas.accounts.v1.DatasourceService",
+      "method": "MigrateGitHubSourceToApp",
+      "input_type": "saas.accounts.v1.MigrateGitHubSourceToAppRequest",
+      "output_type": "saas.accounts.v1.MigrateGitHubSourceToAppResponse",
+      "client_streaming": false,
+      "server_streaming": false,
+      "deprecated": false,
+      "source_proto": "saas/accounts/v1/datasource.proto",
+      "protocols": [
+        "PROTOCOL_GRPC",
+        "PROTOCOL_CONNECT"
+      ],
+      "http_bindings": [],
+      "policy": {
+        "exposure": "EXPOSURE_AUTHENTICATED",
+        "tenant": "TENANT_REQUIREMENT_ORG_ADMIN",
+        "permissions": [],
+        "scopes": [],
+        "resource_bindings": [
+          {
+            "request_field": "org_id",
+            "target": "RESOURCE_TARGET_ORGANIZATION",
+            "lookup": "RESOURCE_LOOKUP_DIRECT_ID"
+          }
+        ],
+        "mfa": "MFA_REQUIREMENT_NONE",
+        "audit": {
+          "events": [
+            "saas.datasource.credential.updated"
+          ],
+          "emission": "AUDIT_EMISSION_SUCCESS"
+        },
+        "idempotency": "IDEMPOTENCY_REQUIREMENT_FORBIDDEN",
+        "rate_limit": "RATE_LIMIT_CLASS_STANDARD_WRITE",
+        "request_sensitivity": "SENSITIVITY_INTERNAL",
+        "response_sensitivity": "SENSITIVITY_CONFIDENTIAL",
+        "platform_role": "PLATFORM_ROLE_REQUIREMENT_NONE",
+        "authentication_factor_attempt": false,
+        "conditions": []
+      },
+      "policy_tier": "org_admin",
+      "description": "Re-point a token-backed GitHub source at the deployment's GitHub App in place, keeping its identity and history.",
       "owner": {
         "module": "saas-starter",
         "service": "accounts"

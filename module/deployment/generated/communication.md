@@ -264,6 +264,22 @@ Every domain event type, who publishes it, and who consumes it. The machine-read
 - **Retention:** 30d
 - **Consumers:** _none_
 
+## saas.datasource.github_app.setup_completed
+
+- **Publisher:** saas
+- **Visibility:** external
+- **Schema:** `saas/events/v1/events.proto#EventEnvelope` (major v1)
+- **Retention:** 30d
+- **Consumers:** _none_
+
+## saas.datasource.github_app.setup_started
+
+- **Publisher:** saas
+- **Visibility:** external
+- **Schema:** `saas/events/v1/events.proto#EventEnvelope` (major v1)
+- **Retention:** 30d
+- **Consumers:** _none_
+
 ## saas.datasource.snapshot_too_large
 
 - **Publisher:** saas

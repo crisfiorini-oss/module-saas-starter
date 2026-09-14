@@ -6,8 +6,11 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../google/api/annotations_pb";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_struct, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_empty } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_struct } from "../../../google/protobuf/struct_pb";
+import type { Timestamp } from "../../../google/protobuf/timestamp_pb";
+import { file_google_protobuf_timestamp } from "../../../google/protobuf/timestamp_pb";
 import type { ListAccessibleScopesResponseSchema } from "./accessible_scopes_pb";
 import { file_saas_accounts_v1_accessible_scopes } from "./accessible_scopes_pb";
 import type { Decision, Permission, Principal, PrincipalKind, PrincipalSchema, Role, RoleAssignment, SubjectKind } from "./common_pb";

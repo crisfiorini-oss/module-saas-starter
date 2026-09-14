@@ -287,7 +287,10 @@ const (
 	EventDatasourceSourceAccessLost     EventType = "saas.datasource.source.access_lost"
 	EventDatasourceSourceAccessRestored EventType = "saas.datasource.source.access_restored"
 	EventDatasourceBlobFetched          EventType = "saas.datasource.blob_fetched"
-	EventFeatureFlagUpdated             EventType = "saas.feature_flag.updated"
+
+	EventDatasourceGitHubAppSetupStarted   EventType = "saas.datasource.github_app.setup_started"
+	EventDatasourceGitHubAppSetupCompleted EventType = "saas.datasource.github_app.setup_completed"
+	EventFeatureFlagUpdated                EventType = "saas.feature_flag.updated"
 
 	// Domain-event pub/sub (issue #493). A subscription is a standing grant of
 	// delivery, so its create and revoke are audited on the tenant spine; a

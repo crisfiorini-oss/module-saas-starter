@@ -6,8 +6,10 @@ import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegen
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../google/api/annotations_pb";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_empty, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
+import type { EmptySchema } from "../../../google/protobuf/empty_pb";
+import { file_google_protobuf_empty } from "../../../google/protobuf/empty_pb";
+import type { Timestamp } from "../../../google/protobuf/timestamp_pb";
+import { file_google_protobuf_timestamp } from "../../../google/protobuf/timestamp_pb";
 import type { User } from "./common_pb";
 import { file_saas_accounts_v1_common } from "./common_pb";
 import type { GetEventOperationsRequestSchema, GetEventOperationsResponseSchema, ListEventSubscriptionsRequestSchema, ListEventSubscriptionsResponseSchema } from "../../events/v1/operations_pb";

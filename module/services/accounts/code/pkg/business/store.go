@@ -199,6 +199,29 @@ type Store interface {
 	// a token is minted from. Runs under the caller's WithOrgTx.
 	SetDatasourceSourceGitHubInstallation(ctx context.Context, orgID, id, installationID string) error
 
+	// GitHub App onboarding (issue #687). All org-scoped: every call runs inside
+	// WithOrgTx, and the tables' RLS policies key on app.current_org_id.
+	//
+	// InsertGitHubAppSetup records a one-time setup state bound to the
+	// organization and the user who began it. Only the state's SHA-256 is
+	// stored, so a database read never yields a redeemable state.
+	InsertGitHubAppSetup(ctx context.Context, setup *GitHubAppSetup) error
+	// ConsumeGitHubAppSetup redeems a setup state exactly once: it locks the row
+	// for the hash, rejects one that is unknown, expired, already consumed, or
+	// bound to a different initiator, and otherwise marks it consumed in the
+	// same transaction. A concurrent second redemption loses the compare-and-set
+	// and is rejected, so the state cannot be replayed.
+	ConsumeGitHubAppSetup(ctx context.Context, orgID, stateHash, initiatedBy string, now time.Time) error
+	// ClaimGitHubAppInstallation binds a verified installation to this
+	// organization, or reports that another organization already holds it. The
+	// installation id is the table's primary key, so the refusal is a uniqueness
+	// guarantee rather than a check that could race.
+	ClaimGitHubAppInstallation(ctx context.Context, installationID, orgID, verifiedBy string) (claimed bool, err error)
+	// GitHubAppInstallationClaimedBy reports whether this organization holds a
+	// verified claim on the installation, which is what authorizes connecting a
+	// source through it.
+	GitHubAppInstallationClaimedBy(ctx context.Context, installationID, orgID string) (bool, error)
+
 	// Organizations
 	CreateOrganization(ctx context.Context, org *gen.Organization) error
 	// OrganizationIDExists reports whether any organizations row already holds

@@ -6,8 +6,8 @@ import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobu
 import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv1";
 import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
 import { file_google_api_annotations } from "../../../google/api/annotations_pb";
-import type { FieldMask } from "@bufbuild/protobuf/wkt";
-import { file_google_protobuf_field_mask } from "@bufbuild/protobuf/wkt";
+import type { FieldMask } from "../../../google/protobuf/field_mask_pb";
+import { file_google_protobuf_field_mask } from "../../../google/protobuf/field_mask_pb";
 import type { Settings } from "../../composed/settings/v1/settings_pb";
 import { file_saas_composed_settings_v1_settings } from "../../composed/settings/v1/settings_pb";
 import { file_saas_policy_v1_options } from "../../policy/v1/options_pb";

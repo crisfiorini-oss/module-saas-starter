@@ -32,6 +32,12 @@ type datasourceFakeStore struct {
 
 	// beforeInstallationMark, when set, runs just before a park is applied.
 	beforeInstallationMark func(sourceID string)
+
+	// GitHub App onboarding: setups keyed by state hash, and the one
+	// organization each installation is claimed by.
+	setups        map[string]*business.GitHubAppSetup
+	setupConsumed map[string]bool
+	installations map[string]string // installation id -> owning org id
 }
 
 func newDatasourceFakeStore() *datasourceFakeStore {
@@ -40,7 +46,49 @@ func newDatasourceFakeStore() *datasourceFakeStore {
 		nodes:       map[string]bool{},
 		collections: map[string]string{},
 		ordinals:    map[string]int64{},
+
+		setups:        map[string]*business.GitHubAppSetup{},
+		setupConsumed: map[string]bool{},
+		installations: map[string]string{},
 	}
+}
+
+func (f *datasourceFakeStore) InsertGitHubAppSetup(_ context.Context, setup *business.GitHubAppSetup) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	cp := *setup
+	f.setups[setup.StateHash] = &cp
+	return nil
+}
+
+// ConsumeGitHubAppSetup mirrors the store's compare-and-set: every rejection
+// cause collapses to one error, and a state already consumed loses.
+func (f *datasourceFakeStore) ConsumeGitHubAppSetup(_ context.Context, orgID, stateHash, initiatedBy string, now time.Time) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	setup, ok := f.setups[stateHash]
+	if !ok || setup.OrgID != orgID || setup.InitiatedBy != initiatedBy ||
+		f.setupConsumed[stateHash] || !now.Before(setup.ExpiresAt) {
+		return business.ErrGitHubAppSetupRejected
+	}
+	f.setupConsumed[stateHash] = true
+	return nil
+}
+
+func (f *datasourceFakeStore) ClaimGitHubAppInstallation(_ context.Context, installationID, orgID, _ string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if owner, ok := f.installations[installationID]; ok {
+		return owner == orgID, nil
+	}
+	f.installations[installationID] = orgID
+	return true, nil
+}
+
+func (f *datasourceFakeStore) GitHubAppInstallationClaimedBy(_ context.Context, installationID, orgID string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.installations[installationID] == orgID, nil
 }
 
 func (f *datasourceFakeStore) RegisterScopeNode(_ context.Context, node *gen.ScopeNode) error {

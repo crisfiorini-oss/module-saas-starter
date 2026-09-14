@@ -2,7 +2,7 @@
 
 > Generated from protobuf service descriptors and `saas.policy.v1.method_policy`; only the prose description is joined from `pkg/business/introspection.go`. Do not edit by hand. Run `go generate ./pkg/business` from `module/services/accounts/code`.
 
-Inventory: **198 RPCs** across **31 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
+Inventory: **201 RPCs** across **31 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
 
 The compact tier is retained for compatibility. Guards, resource bindings, audit events, limiter class, and data sensitivity are descriptor-authoritative. Domain handlers may enforce stronger state-dependent rules but may not weaken this floor.
 
@@ -40,10 +40,13 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 | `/saas.accounts.v1.DashboardService/UpdateDashboard` | unary | `—` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | perm=dashboards:write | id → OWNED_RESOURCE/RESOURCE_TO_ORGANIZATION | SUCCESS: saas.dashboard.updated | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Rename or replace the spec of a dashboard the caller owns or administers. |
 | `/saas.accounts.v1.DatasourceService/AddGitHubSource` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.source.added | FORBIDDEN / STANDARD_WRITE | SECRET → CONFIDENTIAL | Connect a GitHub repository as a datasource, storing its access token and optional webhook secret encrypted. |
 | `/saas.accounts.v1.DatasourceService/AddSource` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.source.added | FORBIDDEN / STANDARD_WRITE | SECRET → CONFIDENTIAL | Connect a datasource for any provider, storing its config and encrypted credential. |
+| `/saas.accounts.v1.DatasourceService/BeginGitHubAppSetup` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.github_app.setup_started | FORBIDDEN / STANDARD_WRITE | INTERNAL → SECRET | Start GitHub App onboarding: mint a one-time, tenant-bound setup state and return the App's install URL. |
+| `/saas.accounts.v1.DatasourceService/CompleteGitHubAppSetup` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.github_app.setup_completed | FORBIDDEN / STANDARD_WRITE | SECRET → CONFIDENTIAL | Redeem a setup state once, verify the returned GitHub App installation server-side, and list the repositories it grants. |
 | `/saas.accounts.v1.DatasourceService/DeleteSource` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.source.removed | FORBIDDEN / STANDARD_WRITE | INTERNAL → INTERNAL | Remove a connected datasource and its stored credentials. |
 | `/saas.accounts.v1.DatasourceService/GetDatasourceCatalog` | unary | `—` | `auth` | exposure=AUTHENTICATED; tenant=NONE | — | — | — | FORBIDDEN / STANDARD_READ | INTERNAL → INTERNAL | List the available datasource provider types and their connect metadata. |
 | `/saas.accounts.v1.DatasourceService/GetSource` | unary | `—` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | org_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | INTERNAL → CONFIDENTIAL | Read one connected datasource in the org. |
 | `/saas.accounts.v1.DatasourceService/ListSources` | unary | `—` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | org_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | INTERNAL → CONFIDENTIAL | List the org's connected datasources. |
+| `/saas.accounts.v1.DatasourceService/MigrateGitHubSourceToApp` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.credential.updated | FORBIDDEN / STANDARD_WRITE | INTERNAL → CONFIDENTIAL | Re-point a token-backed GitHub source at the deployment's GitHub App in place, keeping its identity and history. |
 | `/saas.accounts.v1.DatasourceService/SyncSource` | unary | `—` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.datasource.source.synced | FORBIDDEN / STANDARD_WRITE | SECRET → INTERNAL | Pull the source's current contents and enqueue ingestion deliveries. |
 | `/saas.accounts.v1.DelegationService/DecideDelegation` | unary | `POST /v1/delegations/{id}:decide` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.delegation.approved, saas.delegation.denied | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | Approve or deny a delegation request. |
 | `/saas.accounts.v1.DelegationService/ListPendingDelegations` | unary | `GET /v1/delegations:pending` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | org_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | List pending organization delegations. |
@@ -212,7 +215,7 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 - `auth`: 39
 - `internal`: 38
 - `mfa`: 3
-- `org_admin`: 41
+- `org_admin`: 44
 - `org_member`: 37
 - `platform_admin`: 24
 - `public`: 16

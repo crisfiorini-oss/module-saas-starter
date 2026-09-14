@@ -280,6 +280,7 @@ func doWork(ctx context.Context) (Clean, error) {
 	service.SetGitHubAppRegistration(
 		workspaceEnv("github-app", "GITHUB_APP_ID"),
 		workspaceEnv("github-app", "GITHUB_APP_PRIVATE_KEY"),
+		workspaceEnv("github-app", "GITHUB_APP_SLUG"),
 		workspaceEnv("github-app", "GITHUB_APP_WEBHOOK_SECRET"),
 	)
 	webhookPolicy := business.NewWebhookEndpointPolicy()

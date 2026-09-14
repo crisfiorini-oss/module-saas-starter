@@ -74,13 +74,15 @@ func parseGitHubStoredCredential(plaintext string) githubStoredCredential {
 
 // SetGitHubAppRegistration wires the deployment's GitHub App: the id it is
 // registered under, the RSA private key its installation tokens are signed
-// with, and the secret GitHub signs the App's own lifecycle deliveries with.
-// All three are operator-managed deployment configuration, held once here
-// rather than copied onto each source, and never leave accounts. An empty
-// registration leaves every source on its own stored PAT.
-func (s *Service) SetGitHubAppRegistration(appID, privateKeyPEM, webhookSecret string) {
+// with, the URL slug its install link is built from, and the secret GitHub
+// signs the App's own lifecycle deliveries with. All four are operator-managed
+// deployment configuration, held once here rather than copied onto each source,
+// and never leave accounts. An empty registration leaves every source on its
+// own stored PAT.
+func (s *Service) SetGitHubAppRegistration(appID, privateKeyPEM, slug, webhookSecret string) {
 	s.githubAppID = strings.TrimSpace(appID)
 	s.githubAppKeyPEM = strings.TrimSpace(privateKeyPEM)
+	s.githubAppSlug = strings.TrimSpace(slug)
 	s.githubAppWebhookSecret = strings.TrimSpace(webhookSecret)
 }
 

@@ -30,8 +30,11 @@ const testInstallationID = 4242
 // resolving which installation covers a repository, and minting an
 // installation token for it.
 type fakeGitHubApp struct {
-	mintStatus   int // non-zero fails the mint with this status
-	lookupStatus int // non-zero fails the installation lookup with this status
+	mintStatus   int  // non-zero fails the mint with this status
+	lookupStatus int  // non-zero fails the installation lookup with this status
+	suspended    bool // the installation resolves but grants nothing
+	// What the installation grants. Nil serves a single default repository.
+	repositories []map[string]any
 
 	mu        sync.Mutex
 	mints     int
@@ -40,6 +43,15 @@ type fakeGitHubApp struct {
 
 func (f *fakeGitHubApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch {
+	case strings.HasSuffix(r.URL.Path, "/installation/repositories"):
+		repositories := f.repositories
+		if repositories == nil {
+			repositories = []map[string]any{{"full_name": "acme/handbook", "default_branch": "main"}}
+		}
+		writeAppJSON(w, http.StatusOK, map[string]any{
+			"total_count":  len(repositories),
+			"repositories": repositories,
+		})
 	case strings.HasSuffix(r.URL.Path, "/installation"):
 		if f.lookupStatus != 0 {
 			http.Error(w, `{"message":"not installed"}`, f.lookupStatus)
@@ -62,6 +74,21 @@ func (f *fakeGitHubApp) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"token":      token,
 			"expires_at": time.Now().Add(time.Hour).Format(time.RFC3339),
 		})
+	// Must follow the /access_tokens case: a mint URL shares this prefix.
+	case strings.HasPrefix(r.URL.Path, "/app/installations/"):
+		if f.lookupStatus != 0 {
+			http.Error(w, `{"message":"not found"}`, f.lookupStatus)
+			return
+		}
+		installation := map[string]any{
+			"id":                   testInstallationID,
+			"repository_selection": "selected",
+			"account":              map[string]any{"login": "acme"},
+		}
+		if f.suspended {
+			installation["suspended_at"] = time.Now().UTC().Format(time.RFC3339)
+		}
+		writeAppJSON(w, http.StatusOK, installation)
 	default:
 		http.Error(w, `{"message":"not found"}`, http.StatusNotFound)
 	}
@@ -138,7 +165,7 @@ func newAppHarness(t *testing.T, app *fakeGitHubApp) *appHarness {
 	producer := &recordingProducer{}
 	svc, audit := newDatasourceService(store, producer, &fakeGitHub{defaultBranch: "main", commit: "abc"})
 	svc.SetGitHubConnector(githubconnector.NewConnector(githubconnector.WithBaseURL(server.URL)))
-	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "")
+	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "example-app", "")
 
 	tokens := &githubTokens{}
 	gh := &fakeGitHub{defaultBranch: "main", commit: "abc"}
@@ -263,7 +290,7 @@ func TestMigrateGitHubSourceToApp_KeepsThePATWhenAppAccessIsNotProven(t *testing
 // A source connected before the App lifecycle stored its PAT as bare text.
 func TestGitHubSource_LegacyPATEnvelopeStillAuthenticates(t *testing.T) {
 	h := newAppHarness(t, &fakeGitHubApp{})
-	h.svc.SetGitHubAppRegistration("", "", "")
+	h.svc.SetGitHubAppRegistration("", "", "", "")
 	source := h.addPATSource(t, "acme/docs", "pat-old")
 
 	_, err := h.svc.SyncDatasourceSource(context.Background(), "actor-1", testOrg, source.ID)
