@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file saas/accounts/v1/datasource.proto.
  */
 export const file_saas_accounts_v1_datasource: GenFile = /*@__PURE__*/
-  fileDesc("CiFzYWFzL2FjY291bnRzL3YxL2RhdGFzb3VyY2UucHJvdG8SEHNhYXMuYWNjb3VudHMudjEiRQoWR2l0SHViRGF0YXNvdXJjZUNvbmZpZxIMCgRyZXBvGAEgASgJEg0KBXBhdGhzGAIgAygJEg4KBmJyYW5jaBgDIAEoCSJHCg9BcGlPQXV0aDJDb25maWcSEQoJdG9rZW5fdXJsGAEgASgJEhEKCWNsaWVudF9pZBgCIAEoCRIOCgZzY29wZXMYAyADKAki6gEKE0FwaURhdGFzb3VyY2VDb25maWcSEAoIYmFzZV91cmwYASABKAkSFQoNcmVzb3VyY2VfcGF0aBgCIAEoCRI8Cg9jcmVkZW50aWFsX2tpbmQYAyABKA4yIy5zYWFzLmFjY291bnRzLnYxLkFwaUNyZWRlbnRpYWxLaW5kEhkKEWNyZWRlbnRpYWxfaGVhZGVyGAQgASgJEh4KFmNyZWRlbnRpYWxfcXVlcnlfcGFyYW0YBSABKAkSMQoGb2F1dGgyGAYgASgLMiEuc2Fhcy5hY2NvdW50cy52MS5BcGlPQXV0aDJDb25maWciQQoXQ3Jhd2xlckRhdGFzb3VyY2VDb25maWcSEwoLc2l0ZW1hcF91cmwYASABKAkSEQoJbWF4X3BhZ2VzGAIgASgNIoYBChZVcGxvYWREYXRhc291cmNlQ29uZmlnEhAKCGVuZHBvaW50GAEgASgJEg4KBnJlZ2lvbhgCIAEoCRIOCgZidWNrZXQYAyABKAkSDgoGcHJlZml4GAQgASgJEhUKDWFjY2Vzc19rZXlfaWQYBSABKAkSEwoLbWF4X29iamVjdHMYBiABKA0ixgUKCkRhdGFzb3VyY2USCgoCaWQYASABKAkSDgoGb3JnX2lkGAIgASgJEjYKCHByb3ZpZGVyGAMgASgOMiQuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlUHJvdmlkZXISOAoGZ2l0aHViGAUgASgLMiguc2Fhcy5hY2NvdW50cy52MS5HaXRIdWJEYXRhc291cmNlQ29uZmlnEjIKBnN0YXR1cxgGIAEoDjIiLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZVN0YXR1cxIaChJ3ZWJob29rX2NvbmZpZ3VyZWQYByABKAgSLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9zeW5jZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjIKA2FwaRgLIAEoCzIlLnNhYXMuYWNjb3VudHMudjEuQXBpRGF0YXNvdXJjZUNvbmZpZxI6CgdjcmF3bGVyGAwgASgLMikuc2Fhcy5hY2NvdW50cy52MS5DcmF3bGVyRGF0YXNvdXJjZUNvbmZpZxI4CgZ1cGxvYWQYDSABKAsyKC5zYWFzLmFjY291bnRzLnYxLlVwbG9hZERhdGFzb3VyY2VDb25maWcSGAoQYm91bmRhcnlfbm9kZV9pZBgOIAEoCRI0ChBsYXN0X2luZ2VzdGVkX2F0GA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIcChRsYXN0X2luZ2VzdGVkX2NvbW1pdBgQIAEoCRIVCg1zdGF0dXNfcmVhc29uGBEgASgJSgQIBBAFUhF0YXJnZXRfY29sbGVjdGlvbiLpAgoWQWRkR2l0SHViU291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEjsKBHJlcG8YAiABKAlCLbpIKnIoEAMY/wEyIV5bQS1aYS16MC05Xy4tXSsvW0EtWmEtejAtOV8uLV0rJBIgCgVwYXRocxgDIAMoCUIRukgOkgELEEAiB3IFEAEYgAQSGAoGYnJhbmNoGAQgASgJQgi6SAVyAxj/ARIkChBib3VuZGFyeV9ub2RlX2lkGAggASgJQgi6SAVyA7ABAUgAEiYKEGNvbGxlY3Rpb25fbGFiZWwYCSABKAlCCrpIB3IFEAEY/wFIABIgCgxhY2Nlc3NfdG9rZW4YBiABKAlCCrpIB3IFEAEYgAgSIAoOd2ViaG9va19zZWNyZXQYByABKAlCCLpIBXIDGIAIQhEKCGJvdW5kYXJ5EgW6SAIIAUoECAUQBlIRdGFyZ2V0X2NvbGxlY3Rpb24iSwoXQWRkR2l0SHViU291cmNlUmVzcG9uc2USMAoKZGF0YXNvdXJjZRgBIAEoCzIcLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZSLIBAoQQWRkU291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEkIKCHByb3ZpZGVyGAIgASgOMiQuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlUHJvdmlkZXJCCrpIB4IBBBABIAASOgoGZ2l0aHViGAQgASgLMiguc2Fhcy5hY2NvdW50cy52MS5HaXRIdWJEYXRhc291cmNlQ29uZmlnSAASNAoDYXBpGAUgASgLMiUuc2Fhcy5hY2NvdW50cy52MS5BcGlEYXRhc291cmNlQ29uZmlnSAASPAoHY3Jhd2xlchgIIAEoCzIpLnNhYXMuYWNjb3VudHMudjEuQ3Jhd2xlckRhdGFzb3VyY2VDb25maWdIABI6CgZ1cGxvYWQYCSABKAsyKC5zYWFzLmFjY291bnRzLnYxLlVwbG9hZERhdGFzb3VyY2VDb25maWdIABIkChBib3VuZGFyeV9ub2RlX2lkGAwgASgJQgi6SAVyA7ABAUgBEiYKEGNvbGxlY3Rpb25fbGFiZWwYDSABKAlCCrpIB3IFEAEY/wFIARIcCgpjcmVkZW50aWFsGAYgASgJQgi6SAVyAxiAIBIgCg53ZWJob29rX3NlY3JldBgHIAEoCUIIukgFcgMYgAgSJgoUb2F1dGgyX2NsaWVudF9zZWNyZXQYCiABKAlCCLpIBXIDGIAIQggKBmNvbmZpZ0IRCghib3VuZGFyeRIFukgCCAFKBAgDEARSEXRhcmdldF9jb2xsZWN0aW9uIkUKEUFkZFNvdXJjZVJlc3BvbnNlEjAKCmRhdGFzb3VyY2UYASABKAsyHC5zYWFzLmFjY291bnRzLnYxLkRhdGFzb3VyY2UiWgoVRGF0YXNvdXJjZUNvbmZpZ0ZpZWxkEgsKA2tleRgBIAEoCRIUCgxkaXNwbGF5X25hbWUYAiABKAkSDAoEaGVscBgDIAEoCRIQCghyZXF1aXJlZBgEIAEoCCKkAgocRGF0YXNvdXJjZVByb3ZpZGVyRGVzY3JpcHRvchI2Cghwcm92aWRlchgBIAEoDjIkLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZVByb3ZpZGVyEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRITCgtkZXNjcmlwdGlvbhgDIAEoCRI+Cg1jb25maWdfZmllbGRzGAQgAygLMicuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlQ29uZmlnRmllbGQSGAoQc3VwcG9ydHNfd2ViaG9vaxgFIAEoCBJHChpzdXBwb3J0ZWRfY3JlZGVudGlhbF9raW5kcxgGIAMoDjIjLnNhYXMuYWNjb3VudHMudjEuQXBpQ3JlZGVudGlhbEtpbmQiHQobR2V0RGF0YXNvdXJjZUNhdGFsb2dSZXF1ZXN0ImEKHEdldERhdGFzb3VyY2VDYXRhbG9nUmVzcG9uc2USQQoJcHJvdmlkZXJzGAEgAygLMi4uc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlUHJvdmlkZXJEZXNjcmlwdG9yIi4KEkxpc3RTb3VyY2VzUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBIkgKE0xpc3RTb3VyY2VzUmVzcG9uc2USMQoLZGF0YXNvdXJjZXMYASADKAsyHC5zYWFzLmFjY291bnRzLnYxLkRhdGFzb3VyY2UiQgoQR2V0U291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEhQKAmlkGAIgASgJQgi6SAVyA7ABASJFChFHZXRTb3VyY2VSZXNwb25zZRIwCgpkYXRhc291cmNlGAEgASgLMhwuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlImMKEVN5bmNTb3VyY2VSZXF1ZXN0EhgKBm9yZ19pZBgBIAEoCUIIukgFcgOwAQESFAoCaWQYAiABKAlCCLpIBXIDsAEBEh4KDGFjY2Vzc190b2tlbhgDIAEoCUIIukgFcgMYgCAiJAoSU3luY1NvdXJjZVJlc3BvbnNlEg4KBmpvYl9pZBgBIAEoCSJFChNEZWxldGVTb3VyY2VSZXF1ZXN0EhgKBm9yZ19pZBgBIAEoCUIIukgFcgOwAQESFAoCaWQYAiABKAlCCLpIBXIDsAEBIhYKFERlbGV0ZVNvdXJjZVJlc3BvbnNlKrcBChJEYXRhc291cmNlUHJvdmlkZXISIwofREFUQVNPVVJDRV9QUk9WSURFUl9VTlNQRUNJRklFRBAAEh4KGkRBVEFTT1VSQ0VfUFJPVklERVJfR0lUSFVCEAESGwoXREFUQVNPVVJDRV9QUk9WSURFUl9BUEkQAhIfChtEQVRBU09VUkNFX1BST1ZJREVSX0NSQVdMRVIQAxIeChpEQVRBU09VUkNFX1BST1ZJREVSX1VQTE9BRBAEKpEBChBEYXRhc291cmNlU3RhdHVzEiEKHURBVEFTT1VSQ0VfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYREFUQVNPVVJDRV9TVEFUVVNfQUNUSVZFEAESHAoYREFUQVNPVVJDRV9TVEFUVVNfUEFVU0VEEAISHgoaREFUQVNPVVJDRV9TVEFUVVNfREVHUkFERUQQAyrWAQoRQXBpQ3JlZGVudGlhbEtpbmQSIwofQVBJX0NSRURFTlRJQUxfS0lORF9VTlNQRUNJRklFRBAAEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfQkVBUkVSEAESHQoZQVBJX0NSRURFTlRJQUxfS0lORF9CQVNJQxACEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfSEVBREVSEAMSHQoZQVBJX0NSRURFTlRJQUxfS0lORF9RVUVSWRAEEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfT0FVVEgyEAUyvQgKEURhdGFzb3VyY2VTZXJ2aWNlEqwBCg9BZGRHaXRIdWJTb3VyY2USKC5zYWFzLmFjY291bnRzLnYxLkFkZEdpdEh1YlNvdXJjZVJlcXVlc3QaKS5zYWFzLmFjY291bnRzLnYxLkFkZEdpdEh1YlNvdXJjZVJlc3BvbnNlIkTC8xhACAIQBCoMCgZvcmdfaWQQAhgBMAE6IAocc2Fhcy5kYXRhc291cmNlLnNvdXJjZS5hZGRlZBACQAFIBFAEWANgARKaAQoJQWRkU291cmNlEiIuc2Fhcy5hY2NvdW50cy52MS5BZGRTb3VyY2VSZXF1ZXN0GiMuc2Fhcy5hY2NvdW50cy52MS5BZGRTb3VyY2VSZXNwb25zZSJEwvMYQAgCEAQqDAoGb3JnX2lkEAIYATABOiAKHHNhYXMuZGF0YXNvdXJjZS5zb3VyY2UuYWRkZWQQAkABSARQBFgDYAESjwEKFEdldERhdGFzb3VyY2VDYXRhbG9nEi0uc2Fhcy5hY2NvdW50cy52MS5HZXREYXRhc291cmNlQ2F0YWxvZ1JlcXVlc3QaLi5zYWFzLmFjY291bnRzLnYxLkdldERhdGFzb3VyY2VDYXRhbG9nUmVzcG9uc2UiGMLzGBQIAhABMAE6AhABQAFIA1ACWAJgARKCAQoLTGlzdFNvdXJjZXMSJC5zYWFzLmFjY291bnRzLnYxLkxpc3RTb3VyY2VzUmVxdWVzdBolLnNhYXMuYWNjb3VudHMudjEuTGlzdFNvdXJjZXNSZXNwb25zZSImwvMYIggCEAMqDAoGb3JnX2lkEAIYATABOgIQAUABSANQAlgDYAESfAoJR2V0U291cmNlEiIuc2Fhcy5hY2NvdW50cy52MS5HZXRTb3VyY2VSZXF1ZXN0GiMuc2Fhcy5hY2NvdW50cy52MS5HZXRTb3VyY2VSZXNwb25zZSImwvMYIggCEAMqDAoGb3JnX2lkEAIYATABOgIQAUABSANQAlgDYAESngEKClN5bmNTb3VyY2USIy5zYWFzLmFjY291bnRzLnYxLlN5bmNTb3VyY2VSZXF1ZXN0GiQuc2Fhcy5hY2NvdW50cy52MS5TeW5jU291cmNlUmVzcG9uc2UiRcLzGEEIAhAEKgwKBm9yZ19pZBACGAEwATohCh1zYWFzLmRhdGFzb3VyY2Uuc291cmNlLnN5bmNlZBACQAFIBFAEWAJgARKlAQoMRGVsZXRlU291cmNlEiUuc2Fhcy5hY2NvdW50cy52MS5EZWxldGVTb3VyY2VSZXF1ZXN0GiYuc2Fhcy5hY2NvdW50cy52MS5EZWxldGVTb3VyY2VSZXNwb25zZSJGwvMYQggCEAQqDAoGb3JnX2lkEAIYATABOiIKHnNhYXMuZGF0YXNvdXJjZS5zb3VyY2UucmVtb3ZlZBACQAFIBFACWAJgAUK3AQoUY29tLnNhYXMuYWNjb3VudHMudjFCD0RhdGFzb3VyY2VQcm90b1ABWixhY2NvdW50cy9wa2cvZ2VuL3NhYXMvYWNjb3VudHMvdjE7YWNjb3VudHN2MaICA1NBWKoCEFNhYXMuQWNjb3VudHMuVjHKAhBTYWFzXEFjY291bnRzXFYx4gIcU2Fhc1xBY2NvdW50c1xWMVxHUEJNZXRhZGF0YeoCElNhYXM6OkFjY291bnRzOjpWMWIGcHJvdG8z", [file_buf_validate_validate, file_google_protobuf_timestamp, file_saas_policy_v1_options]);
+  fileDesc("CiFzYWFzL2FjY291bnRzL3YxL2RhdGFzb3VyY2UucHJvdG8SEHNhYXMuYWNjb3VudHMudjEiRQoWR2l0SHViRGF0YXNvdXJjZUNvbmZpZxIMCgRyZXBvGAEgASgJEg0KBXBhdGhzGAIgAygJEg4KBmJyYW5jaBgDIAEoCSJHCg9BcGlPQXV0aDJDb25maWcSEQoJdG9rZW5fdXJsGAEgASgJEhEKCWNsaWVudF9pZBgCIAEoCRIOCgZzY29wZXMYAyADKAki6gEKE0FwaURhdGFzb3VyY2VDb25maWcSEAoIYmFzZV91cmwYASABKAkSFQoNcmVzb3VyY2VfcGF0aBgCIAEoCRI8Cg9jcmVkZW50aWFsX2tpbmQYAyABKA4yIy5zYWFzLmFjY291bnRzLnYxLkFwaUNyZWRlbnRpYWxLaW5kEhkKEWNyZWRlbnRpYWxfaGVhZGVyGAQgASgJEh4KFmNyZWRlbnRpYWxfcXVlcnlfcGFyYW0YBSABKAkSMQoGb2F1dGgyGAYgASgLMiEuc2Fhcy5hY2NvdW50cy52MS5BcGlPQXV0aDJDb25maWciQQoXQ3Jhd2xlckRhdGFzb3VyY2VDb25maWcSEwoLc2l0ZW1hcF91cmwYASABKAkSEQoJbWF4X3BhZ2VzGAIgASgNIoYBChZVcGxvYWREYXRhc291cmNlQ29uZmlnEhAKCGVuZHBvaW50GAEgASgJEg4KBnJlZ2lvbhgCIAEoCRIOCgZidWNrZXQYAyABKAkSDgoGcHJlZml4GAQgASgJEhUKDWFjY2Vzc19rZXlfaWQYBSABKAkSEwoLbWF4X29iamVjdHMYBiABKA0ixgUKCkRhdGFzb3VyY2USCgoCaWQYASABKAkSDgoGb3JnX2lkGAIgASgJEjYKCHByb3ZpZGVyGAMgASgOMiQuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlUHJvdmlkZXISOAoGZ2l0aHViGAUgASgLMiguc2Fhcy5hY2NvdW50cy52MS5HaXRIdWJEYXRhc291cmNlQ29uZmlnEjIKBnN0YXR1cxgGIAEoDjIiLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZVN0YXR1cxIaChJ3ZWJob29rX2NvbmZpZ3VyZWQYByABKAgSLgoKY3JlYXRlZF9hdBgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoKdXBkYXRlZF9hdBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMgoObGFzdF9zeW5jZWRfYXQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjIKA2FwaRgLIAEoCzIlLnNhYXMuYWNjb3VudHMudjEuQXBpRGF0YXNvdXJjZUNvbmZpZxI6CgdjcmF3bGVyGAwgASgLMikuc2Fhcy5hY2NvdW50cy52MS5DcmF3bGVyRGF0YXNvdXJjZUNvbmZpZxI4CgZ1cGxvYWQYDSABKAsyKC5zYWFzLmFjY291bnRzLnYxLlVwbG9hZERhdGFzb3VyY2VDb25maWcSGAoQYm91bmRhcnlfbm9kZV9pZBgOIAEoCRI0ChBsYXN0X2luZ2VzdGVkX2F0GA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIcChRsYXN0X2luZ2VzdGVkX2NvbW1pdBgQIAEoCRIVCg1zdGF0dXNfcmVhc29uGBEgASgJSgQIBBAFUhF0YXJnZXRfY29sbGVjdGlvbiLnAgoWQWRkR2l0SHViU291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEjsKBHJlcG8YAiABKAlCLbpIKnIoEAMY/wEyIV5bQS1aYS16MC05Xy4tXSsvW0EtWmEtejAtOV8uLV0rJBIgCgVwYXRocxgDIAMoCUIRukgOkgELEEAiB3IFEAEYgAQSGAoGYnJhbmNoGAQgASgJQgi6SAVyAxj/ARIkChBib3VuZGFyeV9ub2RlX2lkGAggASgJQgi6SAVyA7ABAUgAEiYKEGNvbGxlY3Rpb25fbGFiZWwYCSABKAlCCrpIB3IFEAEY/wFIABIeCgxhY2Nlc3NfdG9rZW4YBiABKAlCCLpIBXIDGIAIEiAKDndlYmhvb2tfc2VjcmV0GAcgASgJQgi6SAVyAxiACEIRCghib3VuZGFyeRIFukgCCAFKBAgFEAZSEXRhcmdldF9jb2xsZWN0aW9uIksKF0FkZEdpdEh1YlNvdXJjZVJlc3BvbnNlEjAKCmRhdGFzb3VyY2UYASABKAsyHC5zYWFzLmFjY291bnRzLnYxLkRhdGFzb3VyY2UiyAQKEEFkZFNvdXJjZVJlcXVlc3QSGAoGb3JnX2lkGAEgASgJQgi6SAVyA7ABARJCCghwcm92aWRlchgCIAEoDjIkLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZVByb3ZpZGVyQgq6SAeCAQQQASAAEjoKBmdpdGh1YhgEIAEoCzIoLnNhYXMuYWNjb3VudHMudjEuR2l0SHViRGF0YXNvdXJjZUNvbmZpZ0gAEjQKA2FwaRgFIAEoCzIlLnNhYXMuYWNjb3VudHMudjEuQXBpRGF0YXNvdXJjZUNvbmZpZ0gAEjwKB2NyYXdsZXIYCCABKAsyKS5zYWFzLmFjY291bnRzLnYxLkNyYXdsZXJEYXRhc291cmNlQ29uZmlnSAASOgoGdXBsb2FkGAkgASgLMiguc2Fhcy5hY2NvdW50cy52MS5VcGxvYWREYXRhc291cmNlQ29uZmlnSAASJAoQYm91bmRhcnlfbm9kZV9pZBgMIAEoCUIIukgFcgOwAQFIARImChBjb2xsZWN0aW9uX2xhYmVsGA0gASgJQgq6SAdyBRABGP8BSAESHAoKY3JlZGVudGlhbBgGIAEoCUIIukgFcgMYgCASIAoOd2ViaG9va19zZWNyZXQYByABKAlCCLpIBXIDGIAIEiYKFG9hdXRoMl9jbGllbnRfc2VjcmV0GAogASgJQgi6SAVyAxiACEIICgZjb25maWdCEQoIYm91bmRhcnkSBbpIAggBSgQIAxAEUhF0YXJnZXRfY29sbGVjdGlvbiJFChFBZGRTb3VyY2VSZXNwb25zZRIwCgpkYXRhc291cmNlGAEgASgLMhwuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlIloKFURhdGFzb3VyY2VDb25maWdGaWVsZBILCgNrZXkYASABKAkSFAoMZGlzcGxheV9uYW1lGAIgASgJEgwKBGhlbHAYAyABKAkSEAoIcmVxdWlyZWQYBCABKAgipAIKHERhdGFzb3VyY2VQcm92aWRlckRlc2NyaXB0b3ISNgoIcHJvdmlkZXIYASABKA4yJC5zYWFzLmFjY291bnRzLnYxLkRhdGFzb3VyY2VQcm92aWRlchIUCgxkaXNwbGF5X25hbWUYAiABKAkSEwoLZGVzY3JpcHRpb24YAyABKAkSPgoNY29uZmlnX2ZpZWxkcxgEIAMoCzInLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZUNvbmZpZ0ZpZWxkEhgKEHN1cHBvcnRzX3dlYmhvb2sYBSABKAgSRwoac3VwcG9ydGVkX2NyZWRlbnRpYWxfa2luZHMYBiADKA4yIy5zYWFzLmFjY291bnRzLnYxLkFwaUNyZWRlbnRpYWxLaW5kIh0KG0dldERhdGFzb3VyY2VDYXRhbG9nUmVxdWVzdCJhChxHZXREYXRhc291cmNlQ2F0YWxvZ1Jlc3BvbnNlEkEKCXByb3ZpZGVycxgBIAMoCzIuLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZVByb3ZpZGVyRGVzY3JpcHRvciIuChJMaXN0U291cmNlc1JlcXVlc3QSGAoGb3JnX2lkGAEgASgJQgi6SAVyA7ABASJIChNMaXN0U291cmNlc1Jlc3BvbnNlEjEKC2RhdGFzb3VyY2VzGAEgAygLMhwuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlIkIKEEdldFNvdXJjZVJlcXVlc3QSGAoGb3JnX2lkGAEgASgJQgi6SAVyA7ABARIUCgJpZBgCIAEoCUIIukgFcgOwAQEiRQoRR2V0U291cmNlUmVzcG9uc2USMAoKZGF0YXNvdXJjZRgBIAEoCzIcLnNhYXMuYWNjb3VudHMudjEuRGF0YXNvdXJjZSJjChFTeW5jU291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEhQKAmlkGAIgASgJQgi6SAVyA7ABARIeCgxhY2Nlc3NfdG9rZW4YAyABKAlCCLpIBXIDGIAgIiQKElN5bmNTb3VyY2VSZXNwb25zZRIOCgZqb2JfaWQYASABKAkiRQoTRGVsZXRlU291cmNlUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEhQKAmlkGAIgASgJQgi6SAVyA7ABASIWChREZWxldGVTb3VyY2VSZXNwb25zZSJWChNHaXRIdWJBcHBSZXBvc2l0b3J5EgwKBHJlcG8YASABKAkSFgoOZGVmYXVsdF9icmFuY2gYAiABKAkSGQoRYWxyZWFkeV9jb25uZWN0ZWQYAyABKAgiNgoaQmVnaW5HaXRIdWJBcHBTZXR1cFJlcXVlc3QSGAoGb3JnX2lkGAEgASgJQgi6SAVyA7ABASJxChtCZWdpbkdpdEh1YkFwcFNldHVwUmVzcG9uc2USEwoLaW5zdGFsbF91cmwYASABKAkSDQoFc3RhdGUYAiABKAkSLgoKZXhwaXJlc19hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAinAEKHUNvbXBsZXRlR2l0SHViQXBwU2V0dXBSZXF1ZXN0EhgKBm9yZ19pZBgBIAEoCUIIukgFcgOwAQESGQoFc3RhdGUYAiABKAlCCrpIB3IFEAEY/wESLAoPaW5zdGFsbGF0aW9uX2lkGAMgASgJQhO6SBByDhABGCAyCF5bMC05XSskEhgKBGNvZGUYBCABKAlCCrpIB3IFEAEY/wEidgoeQ29tcGxldGVHaXRIdWJBcHBTZXR1cFJlc3BvbnNlEhcKD2luc3RhbGxhdGlvbl9pZBgBIAEoCRI7CgxyZXBvc2l0b3JpZXMYAiADKAsyJS5zYWFzLmFjY291bnRzLnYxLkdpdEh1YkFwcFJlcG9zaXRvcnkiUQofTWlncmF0ZUdpdEh1YlNvdXJjZVRvQXBwUmVxdWVzdBIYCgZvcmdfaWQYASABKAlCCLpIBXIDsAEBEhQKAmlkGAIgASgJQgi6SAVyA7ABASJUCiBNaWdyYXRlR2l0SHViU291cmNlVG9BcHBSZXNwb25zZRIwCgpkYXRhc291cmNlGAEgASgLMhwuc2Fhcy5hY2NvdW50cy52MS5EYXRhc291cmNlKrcBChJEYXRhc291cmNlUHJvdmlkZXISIwofREFUQVNPVVJDRV9QUk9WSURFUl9VTlNQRUNJRklFRBAAEh4KGkRBVEFTT1VSQ0VfUFJPVklERVJfR0lUSFVCEAESGwoXREFUQVNPVVJDRV9QUk9WSURFUl9BUEkQAhIfChtEQVRBU09VUkNFX1BST1ZJREVSX0NSQVdMRVIQAxIeChpEQVRBU09VUkNFX1BST1ZJREVSX1VQTE9BRBAEKpEBChBEYXRhc291cmNlU3RhdHVzEiEKHURBVEFTT1VSQ0VfU1RBVFVTX1VOU1BFQ0lGSUVEEAASHAoYREFUQVNPVVJDRV9TVEFUVVNfQUNUSVZFEAESHAoYREFUQVNPVVJDRV9TVEFUVVNfUEFVU0VEEAISHgoaREFUQVNPVVJDRV9TVEFUVVNfREVHUkFERUQQAyrWAQoRQXBpQ3JlZGVudGlhbEtpbmQSIwofQVBJX0NSRURFTlRJQUxfS0lORF9VTlNQRUNJRklFRBAAEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfQkVBUkVSEAESHQoZQVBJX0NSRURFTlRJQUxfS0lORF9CQVNJQxACEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfSEVBREVSEAMSHQoZQVBJX0NSRURFTlRJQUxfS0lORF9RVUVSWRAEEh4KGkFQSV9DUkVERU5USUFMX0tJTkRfT0FVVEgyEAUypg0KEURhdGFzb3VyY2VTZXJ2aWNlEqwBCg9BZGRHaXRIdWJTb3VyY2USKC5zYWFzLmFjY291bnRzLnYxLkFkZEdpdEh1YlNvdXJjZVJlcXVlc3QaKS5zYWFzLmFjY291bnRzLnYxLkFkZEdpdEh1YlNvdXJjZVJlc3BvbnNlIkTC8xhACAIQBCoMCgZvcmdfaWQQAhgBMAE6IAocc2Fhcy5kYXRhc291cmNlLnNvdXJjZS5hZGRlZBACQAFIBFAEWANgARKaAQoJQWRkU291cmNlEiIuc2Fhcy5hY2NvdW50cy52MS5BZGRTb3VyY2VSZXF1ZXN0GiMuc2Fhcy5hY2NvdW50cy52MS5BZGRTb3VyY2VSZXNwb25zZSJEwvMYQAgCEAQqDAoGb3JnX2lkEAIYATABOiAKHHNhYXMuZGF0YXNvdXJjZS5zb3VyY2UuYWRkZWQQAkABSARQBFgDYAESjwEKFEdldERhdGFzb3VyY2VDYXRhbG9nEi0uc2Fhcy5hY2NvdW50cy52MS5HZXREYXRhc291cmNlQ2F0YWxvZ1JlcXVlc3QaLi5zYWFzLmFjY291bnRzLnYxLkdldERhdGFzb3VyY2VDYXRhbG9nUmVzcG9uc2UiGMLzGBQIAhABMAE6AhABQAFIA1ACWAJgARKCAQoLTGlzdFNvdXJjZXMSJC5zYWFzLmFjY291bnRzLnYxLkxpc3RTb3VyY2VzUmVxdWVzdBolLnNhYXMuYWNjb3VudHMudjEuTGlzdFNvdXJjZXNSZXNwb25zZSImwvMYIggCEAMqDAoGb3JnX2lkEAIYATABOgIQAUABSANQAlgDYAESfAoJR2V0U291cmNlEiIuc2Fhcy5hY2NvdW50cy52MS5HZXRTb3VyY2VSZXF1ZXN0GiMuc2Fhcy5hY2NvdW50cy52MS5HZXRTb3VyY2VSZXNwb25zZSImwvMYIggCEAMqDAoGb3JnX2lkEAIYATABOgIQAUABSANQAlgDYAESngEKClN5bmNTb3VyY2USIy5zYWFzLmFjY291bnRzLnYxLlN5bmNTb3VyY2VSZXF1ZXN0GiQuc2Fhcy5hY2NvdW50cy52MS5TeW5jU291cmNlUmVzcG9uc2UiRcLzGEEIAhAEKgwKBm9yZ19pZBACGAEwATohCh1zYWFzLmRhdGFzb3VyY2Uuc291cmNlLnN5bmNlZBACQAFIBFAEWAJgARKlAQoMRGVsZXRlU291cmNlEiUuc2Fhcy5hY2NvdW50cy52MS5EZWxldGVTb3VyY2VSZXF1ZXN0GiYuc2Fhcy5hY2NvdW50cy52MS5EZWxldGVTb3VyY2VSZXNwb25zZSJGwvMYQggCEAQqDAoGb3JnX2lkEAIYATABOiIKHnNhYXMuZGF0YXNvdXJjZS5zb3VyY2UucmVtb3ZlZBACQAFIBFACWAJgARLEAQoTQmVnaW5HaXRIdWJBcHBTZXR1cBIsLnNhYXMuYWNjb3VudHMudjEuQmVnaW5HaXRIdWJBcHBTZXR1cFJlcXVlc3QaLS5zYWFzLmFjY291bnRzLnYxLkJlZ2luR2l0SHViQXBwU2V0dXBSZXNwb25zZSJQwvMYTAgCEAQqDAoGb3JnX2lkEAIYATABOiwKKHNhYXMuZGF0YXNvdXJjZS5naXRodWJfYXBwLnNldHVwX3N0YXJ0ZWQQAkABSARQAlgEYAESzwEKFkNvbXBsZXRlR2l0SHViQXBwU2V0dXASLy5zYWFzLmFjY291bnRzLnYxLkNvbXBsZXRlR2l0SHViQXBwU2V0dXBSZXF1ZXN0GjAuc2Fhcy5hY2NvdW50cy52MS5Db21wbGV0ZUdpdEh1YkFwcFNldHVwUmVzcG9uc2UiUsLzGE4IAhAEKgwKBm9yZ19pZBACGAEwATouCipzYWFzLmRhdGFzb3VyY2UuZ2l0aHViX2FwcC5zZXR1cF9jb21wbGV0ZWQQAkABSARQBFgDYAESzQEKGE1pZ3JhdGVHaXRIdWJTb3VyY2VUb0FwcBIxLnNhYXMuYWNjb3VudHMudjEuTWlncmF0ZUdpdEh1YlNvdXJjZVRvQXBwUmVxdWVzdBoyLnNhYXMuYWNjb3VudHMudjEuTWlncmF0ZUdpdEh1YlNvdXJjZVRvQXBwUmVzcG9uc2UiSsLzGEYIAhAEKgwKBm9yZ19pZBACGAEwATomCiJzYWFzLmRhdGFzb3VyY2UuY3JlZGVudGlhbC51cGRhdGVkEAJAAUgEUAJYA2ABQrcBChRjb20uc2Fhcy5hY2NvdW50cy52MUIPRGF0YXNvdXJjZVByb3RvUAFaLGFjY291bnRzL3BrZy9nZW4vc2Fhcy9hY2NvdW50cy92MTthY2NvdW50c3YxogIDU0FYqgIQU2Fhcy5BY2NvdW50cy5WMcoCEFNhYXNcQWNjb3VudHNcVjHiAhxTYWFzXEFjY291bnRzXFYxXEdQQk1ldGFkYXRh6gISU2Fhczo6QWNjb3VudHM6OlYxYgZwcm90bzM", [file_buf_validate_validate, file_google_protobuf_timestamp, file_saas_policy_v1_options]);
 
 /**
  * GitHubDatasourceConfig is the public, non-secret configuration of a GitHub
@@ -412,9 +412,17 @@ export type AddGitHubSourceRequest = Message<"saas.accounts.v1.AddGitHubSourceRe
   } | { case: undefined; value?: undefined };
 
   /**
-   * Plaintext GitHub token (a PAT or a GitHub App installation token) used to
-   * read the repository. Encrypted through the SecretCipher at receipt; only its
-   * envelope reference is persisted.
+   * Plaintext, repository-scoped fine-grained GitHub PAT used to read the
+   * repository. Encrypted through the SecretCipher at receipt; only its envelope
+   * reference is persisted.
+   *
+   * Empty connects the source through the deployment's GitHub App instead: the
+   * host resolves the installation covering `repo` itself and mints a
+   * short-lived, repository-scoped installation token for every fetch, so no
+   * token is ever pasted or stored. That path requires this organization to
+   * have completed App setup (BeginGitHubAppSetup then CompleteGitHubAppSetup)
+   * for the installation covering `repo`, and is refused when no App is
+   * registered for the deployment.
    *
    * @generated from field: string access_token = 6;
    */
@@ -856,6 +864,210 @@ export const DeleteSourceResponseSchema: GenMessage<DeleteSourceResponse> = /*@_
   messageDesc(file_saas_accounts_v1_datasource, 21);
 
 /**
+ * GitHubAppRepository is one repository a verified App installation grants this
+ * host read access to.
+ *
+ * @generated from message saas.accounts.v1.GitHubAppRepository
+ */
+export type GitHubAppRepository = Message<"saas.accounts.v1.GitHubAppRepository"> & {
+  /**
+   * "owner/name".
+   *
+   * @generated from field: string repo = 1;
+   */
+  repo: string;
+
+  /**
+   * The repository's default branch, so a client can offer it without a second
+   * round trip. Empty when GitHub reported none.
+   *
+   * @generated from field: string default_branch = 2;
+   */
+  defaultBranch: string;
+
+  /**
+   * True when this organization already connects this repository, so a client
+   * can present it as connected rather than offering it twice.
+   *
+   * @generated from field: bool already_connected = 3;
+   */
+  alreadyConnected: boolean;
+};
+
+/**
+ * Describes the message saas.accounts.v1.GitHubAppRepository.
+ * Use `create(GitHubAppRepositorySchema)` to create a new message.
+ */
+export const GitHubAppRepositorySchema: GenMessage<GitHubAppRepository> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 22);
+
+/**
+ * @generated from message saas.accounts.v1.BeginGitHubAppSetupRequest
+ */
+export type BeginGitHubAppSetupRequest = Message<"saas.accounts.v1.BeginGitHubAppSetupRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+};
+
+/**
+ * Describes the message saas.accounts.v1.BeginGitHubAppSetupRequest.
+ * Use `create(BeginGitHubAppSetupRequestSchema)` to create a new message.
+ */
+export const BeginGitHubAppSetupRequestSchema: GenMessage<BeginGitHubAppSetupRequest> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 23);
+
+/**
+ * @generated from message saas.accounts.v1.BeginGitHubAppSetupResponse
+ */
+export type BeginGitHubAppSetupResponse = Message<"saas.accounts.v1.BeginGitHubAppSetupResponse"> & {
+  /**
+   * Where to send the browser to install the App and choose repositories. It
+   * carries the state below, and an installation that returns without it is
+   * refused.
+   *
+   * @generated from field: string install_url = 1;
+   */
+  installUrl: string;
+
+  /**
+   * One-time setup state, bound server-side to this organization and to the
+   * user who began the setup. Redeemable exactly once.
+   *
+   * @generated from field: string state = 2;
+   */
+  state: string;
+
+  /**
+   * When the state stops being redeemable.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_at = 3;
+   */
+  expiresAt?: Timestamp;
+};
+
+/**
+ * Describes the message saas.accounts.v1.BeginGitHubAppSetupResponse.
+ * Use `create(BeginGitHubAppSetupResponseSchema)` to create a new message.
+ */
+export const BeginGitHubAppSetupResponseSchema: GenMessage<BeginGitHubAppSetupResponse> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 24);
+
+/**
+ * @generated from message saas.accounts.v1.CompleteGitHubAppSetupRequest
+ */
+export type CompleteGitHubAppSetupRequest = Message<"saas.accounts.v1.CompleteGitHubAppSetupRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+
+  /**
+   * The state handed out by BeginGitHubAppSetup and echoed back through the
+   * redirect.
+   *
+   * @generated from field: string state = 2;
+   */
+  state: string;
+
+  /**
+   * The installation the redirect claims was installed. A claim, never
+   * authority: it is a small integer supplied by a browser, so the host both
+   * verifies it against GitHub as the App and requires `code` below to
+   * attribute it to the caller, and refuses one already bound to a different
+   * organization.
+   *
+   * @generated from field: string installation_id = 3;
+   */
+  installationId: string;
+
+  /**
+   * The authorization code GitHub appends to the setup redirect when the App
+   * requests user authorization during installation. The host trades it for a
+   * user-to-server token and requires that user to reach the installation,
+   * which is what stops one organization claiming another's installation by
+   * naming its id. Required: without it an installation is attributable to
+   * nobody.
+   *
+   * @generated from field: string code = 4;
+   */
+  code: string;
+};
+
+/**
+ * Describes the message saas.accounts.v1.CompleteGitHubAppSetupRequest.
+ * Use `create(CompleteGitHubAppSetupRequestSchema)` to create a new message.
+ */
+export const CompleteGitHubAppSetupRequestSchema: GenMessage<CompleteGitHubAppSetupRequest> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 25);
+
+/**
+ * @generated from message saas.accounts.v1.CompleteGitHubAppSetupResponse
+ */
+export type CompleteGitHubAppSetupResponse = Message<"saas.accounts.v1.CompleteGitHubAppSetupResponse"> & {
+  /**
+   * The installation the host verified and bound to this organization.
+   *
+   * @generated from field: string installation_id = 1;
+   */
+  installationId: string;
+
+  /**
+   * Repositories that installation grants, each connectable with no token.
+   *
+   * @generated from field: repeated saas.accounts.v1.GitHubAppRepository repositories = 2;
+   */
+  repositories: GitHubAppRepository[];
+};
+
+/**
+ * Describes the message saas.accounts.v1.CompleteGitHubAppSetupResponse.
+ * Use `create(CompleteGitHubAppSetupResponseSchema)` to create a new message.
+ */
+export const CompleteGitHubAppSetupResponseSchema: GenMessage<CompleteGitHubAppSetupResponse> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 26);
+
+/**
+ * @generated from message saas.accounts.v1.MigrateGitHubSourceToAppRequest
+ */
+export type MigrateGitHubSourceToAppRequest = Message<"saas.accounts.v1.MigrateGitHubSourceToAppRequest"> & {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId: string;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message saas.accounts.v1.MigrateGitHubSourceToAppRequest.
+ * Use `create(MigrateGitHubSourceToAppRequestSchema)` to create a new message.
+ */
+export const MigrateGitHubSourceToAppRequestSchema: GenMessage<MigrateGitHubSourceToAppRequest> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 27);
+
+/**
+ * @generated from message saas.accounts.v1.MigrateGitHubSourceToAppResponse
+ */
+export type MigrateGitHubSourceToAppResponse = Message<"saas.accounts.v1.MigrateGitHubSourceToAppResponse"> & {
+  /**
+   * @generated from field: saas.accounts.v1.Datasource datasource = 1;
+   */
+  datasource?: Datasource;
+};
+
+/**
+ * Describes the message saas.accounts.v1.MigrateGitHubSourceToAppResponse.
+ * Use `create(MigrateGitHubSourceToAppResponseSchema)` to create a new message.
+ */
+export const MigrateGitHubSourceToAppResponseSchema: GenMessage<MigrateGitHubSourceToAppResponse> = /*@__PURE__*/
+  messageDesc(file_saas_accounts_v1_datasource, 28);
+
+/**
  * DatasourceProvider identifies the external system a datasource connects to.
  * GitHub is the bespoke connector; API is the generic "HTTP API with a stored
  * credential" connector that covers a large class of sources without a
@@ -1086,6 +1298,47 @@ export const DatasourceService: GenService<{
     methodKind: "unary";
     input: typeof DeleteSourceRequestSchema;
     output: typeof DeleteSourceResponseSchema;
+  },
+  /**
+   * BeginGitHubAppSetup mints a one-time setup state, bound to this
+   * organization and to the calling user, and returns the URL that installs the
+   * deployment's GitHub App on repositories the tenant picks. No credential is
+   * stored: the App's signing key is deployment custody.
+   *
+   * @generated from rpc saas.accounts.v1.DatasourceService.BeginGitHubAppSetup
+   */
+  beginGitHubAppSetup: {
+    methodKind: "unary";
+    input: typeof BeginGitHubAppSetupRequestSchema;
+    output: typeof BeginGitHubAppSetupResponseSchema;
+  },
+  /**
+   * CompleteGitHubAppSetup redeems that state exactly once and verifies the
+   * returned installation against GitHub as the App before binding it to the
+   * organization, so an installation id arriving from a browser redirect never
+   * claims a tenant on its own. It returns the repositories the installation
+   * grants.
+   *
+   * @generated from rpc saas.accounts.v1.DatasourceService.CompleteGitHubAppSetup
+   */
+  completeGitHubAppSetup: {
+    methodKind: "unary";
+    input: typeof CompleteGitHubAppSetupRequestSchema;
+    output: typeof CompleteGitHubAppSetupResponseSchema;
+  },
+  /**
+   * MigrateGitHubSourceToApp re-points a PAT-backed source at the deployment's
+   * GitHub App in place, keeping the source's identity, path scope, boundary,
+   * grants, delivery cursor and audit history. The installation is resolved
+   * server-side from the repository the source already names, and the stored
+   * PAT is retired only once App access has been proven.
+   *
+   * @generated from rpc saas.accounts.v1.DatasourceService.MigrateGitHubSourceToApp
+   */
+  migrateGitHubSourceToApp: {
+    methodKind: "unary";
+    input: typeof MigrateGitHubSourceToAppRequestSchema;
+    output: typeof MigrateGitHubSourceToAppResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_saas_accounts_v1_datasource, 0);

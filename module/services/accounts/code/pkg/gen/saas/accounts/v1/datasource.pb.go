@@ -806,9 +806,17 @@ type AddGitHubSourceRequest struct {
 	//	*AddGitHubSourceRequest_BoundaryNodeId
 	//	*AddGitHubSourceRequest_CollectionLabel
 	Boundary isAddGitHubSourceRequest_Boundary `protobuf_oneof:"boundary"`
-	// Plaintext GitHub token (a PAT or a GitHub App installation token) used to
-	// read the repository. Encrypted through the SecretCipher at receipt; only its
-	// envelope reference is persisted.
+	// Plaintext, repository-scoped fine-grained GitHub PAT used to read the
+	// repository. Encrypted through the SecretCipher at receipt; only its envelope
+	// reference is persisted.
+	//
+	// Empty connects the source through the deployment's GitHub App instead: the
+	// host resolves the installation covering `repo` itself and mints a
+	// short-lived, repository-scoped installation token for every fetch, so no
+	// token is ever pasted or stored. That path requires this organization to
+	// have completed App setup (BeginGitHubAppSetup then CompleteGitHubAppSetup)
+	// for the installation covering `repo`, and is refused when no App is
+	// registered for the deployment.
 	AccessToken string `protobuf:"bytes,6,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	// Plaintext shared secret GitHub signs push deliveries with
 	// (X-Hub-Signature-256). Optional at creation; when omitted, live webhook
@@ -1861,6 +1869,414 @@ func (*DeleteSourceResponse) Descriptor() ([]byte, []int) {
 	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{21}
 }
 
+// GitHubAppRepository is one repository a verified App installation grants this
+// host read access to.
+type GitHubAppRepository struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// "owner/name".
+	Repo string `protobuf:"bytes,1,opt,name=repo,proto3" json:"repo,omitempty"`
+	// The repository's default branch, so a client can offer it without a second
+	// round trip. Empty when GitHub reported none.
+	DefaultBranch string `protobuf:"bytes,2,opt,name=default_branch,json=defaultBranch,proto3" json:"default_branch,omitempty"`
+	// True when this organization already connects this repository, so a client
+	// can present it as connected rather than offering it twice.
+	AlreadyConnected bool `protobuf:"varint,3,opt,name=already_connected,json=alreadyConnected,proto3" json:"already_connected,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GitHubAppRepository) Reset() {
+	*x = GitHubAppRepository{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GitHubAppRepository) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GitHubAppRepository) ProtoMessage() {}
+
+func (x *GitHubAppRepository) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GitHubAppRepository.ProtoReflect.Descriptor instead.
+func (*GitHubAppRepository) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *GitHubAppRepository) GetRepo() string {
+	if x != nil {
+		return x.Repo
+	}
+	return ""
+}
+
+func (x *GitHubAppRepository) GetDefaultBranch() string {
+	if x != nil {
+		return x.DefaultBranch
+	}
+	return ""
+}
+
+func (x *GitHubAppRepository) GetAlreadyConnected() bool {
+	if x != nil {
+		return x.AlreadyConnected
+	}
+	return false
+}
+
+type BeginGitHubAppSetupRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginGitHubAppSetupRequest) Reset() {
+	*x = BeginGitHubAppSetupRequest{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginGitHubAppSetupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginGitHubAppSetupRequest) ProtoMessage() {}
+
+func (x *BeginGitHubAppSetupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginGitHubAppSetupRequest.ProtoReflect.Descriptor instead.
+func (*BeginGitHubAppSetupRequest) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *BeginGitHubAppSetupRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+type BeginGitHubAppSetupResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Where to send the browser to install the App and choose repositories. It
+	// carries the state below, and an installation that returns without it is
+	// refused.
+	InstallUrl string `protobuf:"bytes,1,opt,name=install_url,json=installUrl,proto3" json:"install_url,omitempty"`
+	// One-time setup state, bound server-side to this organization and to the
+	// user who began the setup. Redeemable exactly once.
+	State string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	// When the state stops being redeemable.
+	ExpiresAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginGitHubAppSetupResponse) Reset() {
+	*x = BeginGitHubAppSetupResponse{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginGitHubAppSetupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginGitHubAppSetupResponse) ProtoMessage() {}
+
+func (x *BeginGitHubAppSetupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginGitHubAppSetupResponse.ProtoReflect.Descriptor instead.
+func (*BeginGitHubAppSetupResponse) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *BeginGitHubAppSetupResponse) GetInstallUrl() string {
+	if x != nil {
+		return x.InstallUrl
+	}
+	return ""
+}
+
+func (x *BeginGitHubAppSetupResponse) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *BeginGitHubAppSetupResponse) GetExpiresAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return nil
+}
+
+type CompleteGitHubAppSetupRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	OrgId string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	// The state handed out by BeginGitHubAppSetup and echoed back through the
+	// redirect.
+	State string `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	// The installation the redirect claims was installed. A claim, never
+	// authority: it is a small integer supplied by a browser, so the host both
+	// verifies it against GitHub as the App and requires `code` below to
+	// attribute it to the caller, and refuses one already bound to a different
+	// organization.
+	InstallationId string `protobuf:"bytes,3,opt,name=installation_id,json=installationId,proto3" json:"installation_id,omitempty"`
+	// The authorization code GitHub appends to the setup redirect when the App
+	// requests user authorization during installation. The host trades it for a
+	// user-to-server token and requires that user to reach the installation,
+	// which is what stops one organization claiming another's installation by
+	// naming its id. Required: without it an installation is attributable to
+	// nobody.
+	Code          string `protobuf:"bytes,4,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteGitHubAppSetupRequest) Reset() {
+	*x = CompleteGitHubAppSetupRequest{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteGitHubAppSetupRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteGitHubAppSetupRequest) ProtoMessage() {}
+
+func (x *CompleteGitHubAppSetupRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteGitHubAppSetupRequest.ProtoReflect.Descriptor instead.
+func (*CompleteGitHubAppSetupRequest) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *CompleteGitHubAppSetupRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *CompleteGitHubAppSetupRequest) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *CompleteGitHubAppSetupRequest) GetInstallationId() string {
+	if x != nil {
+		return x.InstallationId
+	}
+	return ""
+}
+
+func (x *CompleteGitHubAppSetupRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+type CompleteGitHubAppSetupResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The installation the host verified and bound to this organization.
+	InstallationId string `protobuf:"bytes,1,opt,name=installation_id,json=installationId,proto3" json:"installation_id,omitempty"`
+	// Repositories that installation grants, each connectable with no token.
+	Repositories  []*GitHubAppRepository `protobuf:"bytes,2,rep,name=repositories,proto3" json:"repositories,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CompleteGitHubAppSetupResponse) Reset() {
+	*x = CompleteGitHubAppSetupResponse{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CompleteGitHubAppSetupResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CompleteGitHubAppSetupResponse) ProtoMessage() {}
+
+func (x *CompleteGitHubAppSetupResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CompleteGitHubAppSetupResponse.ProtoReflect.Descriptor instead.
+func (*CompleteGitHubAppSetupResponse) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *CompleteGitHubAppSetupResponse) GetInstallationId() string {
+	if x != nil {
+		return x.InstallationId
+	}
+	return ""
+}
+
+func (x *CompleteGitHubAppSetupResponse) GetRepositories() []*GitHubAppRepository {
+	if x != nil {
+		return x.Repositories
+	}
+	return nil
+}
+
+type MigrateGitHubSourceToAppRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OrgId         string                 `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MigrateGitHubSourceToAppRequest) Reset() {
+	*x = MigrateGitHubSourceToAppRequest{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MigrateGitHubSourceToAppRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MigrateGitHubSourceToAppRequest) ProtoMessage() {}
+
+func (x *MigrateGitHubSourceToAppRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MigrateGitHubSourceToAppRequest.ProtoReflect.Descriptor instead.
+func (*MigrateGitHubSourceToAppRequest) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *MigrateGitHubSourceToAppRequest) GetOrgId() string {
+	if x != nil {
+		return x.OrgId
+	}
+	return ""
+}
+
+func (x *MigrateGitHubSourceToAppRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type MigrateGitHubSourceToAppResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Datasource    *Datasource            `protobuf:"bytes,1,opt,name=datasource,proto3" json:"datasource,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MigrateGitHubSourceToAppResponse) Reset() {
+	*x = MigrateGitHubSourceToAppResponse{}
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MigrateGitHubSourceToAppResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MigrateGitHubSourceToAppResponse) ProtoMessage() {}
+
+func (x *MigrateGitHubSourceToAppResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_datasource_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MigrateGitHubSourceToAppResponse.ProtoReflect.Descriptor instead.
+func (*MigrateGitHubSourceToAppResponse) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_datasource_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *MigrateGitHubSourceToAppResponse) GetDatasource() *Datasource {
+	if x != nil {
+		return x.Datasource
+	}
+	return nil
+}
+
 var File_saas_accounts_v1_datasource_proto protoreflect.FileDescriptor
 
 const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
@@ -1913,7 +2329,7 @@ const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
 	"\x10boundary_node_id\x18\x0e \x01(\tR\x0eboundaryNodeId\x12D\n" +
 	"\x10last_ingested_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\x0elastIngestedAt\x120\n" +
 	"\x14last_ingested_commit\x18\x10 \x01(\tR\x12lastIngestedCommit\x12#\n" +
-	"\rstatus_reason\x18\x11 \x01(\tR\fstatusReasonJ\x04\b\x04\x10\x05R\x11target_collection\"\xc2\x03\n" +
+	"\rstatus_reason\x18\x11 \x01(\tR\fstatusReasonJ\x04\b\x04\x10\x05R\x11target_collection\"\xc0\x03\n" +
 	"\x16AddGitHubSourceRequest\x12\x1f\n" +
 	"\x06org_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x05orgId\x12A\n" +
 	"\x04repo\x18\x02 \x01(\tB-\xbaH*r(\x10\x03\x18\xff\x012!^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$R\x04repo\x12'\n" +
@@ -1921,9 +2337,8 @@ const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
 	"\x06branch\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xff\x01R\x06branch\x124\n" +
 	"\x10boundary_node_id\x18\b \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01H\x00R\x0eboundaryNodeId\x127\n" +
 	"\x10collection_label\x18\t \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\xff\x01H\x00R\x0fcollectionLabel\x12-\n" +
-	"\faccess_token\x18\x06 \x01(\tB\n" +
-	"\xbaH\ar\x05\x10\x01\x18\x80\bR\vaccessToken\x12/\n" +
+	"\xbaH\ar\x05\x10\x01\x18\xff\x01H\x00R\x0fcollectionLabel\x12+\n" +
+	"\faccess_token\x18\x06 \x01(\tB\b\xbaH\x05r\x03\x18\x80\bR\vaccessToken\x12/\n" +
 	"\x0ewebhook_secret\x18\a \x01(\tB\b\xbaH\x05r\x03\x18\x80\bR\rwebhookSecretB\x11\n" +
 	"\bboundary\x12\x05\xbaH\x02\b\x01J\x04\b\x05\x10\x06R\x11target_collection\"W\n" +
 	"\x17AddGitHubSourceResponse\x12<\n" +
@@ -1988,7 +2403,36 @@ const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
 	"\x13DeleteSourceRequest\x12\x1f\n" +
 	"\x06org_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x05orgId\x12\x18\n" +
 	"\x02id\x18\x02 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x16\n" +
-	"\x14DeleteSourceResponse*\xb7\x01\n" +
+	"\x14DeleteSourceResponse\"}\n" +
+	"\x13GitHubAppRepository\x12\x12\n" +
+	"\x04repo\x18\x01 \x01(\tR\x04repo\x12%\n" +
+	"\x0edefault_branch\x18\x02 \x01(\tR\rdefaultBranch\x12+\n" +
+	"\x11already_connected\x18\x03 \x01(\bR\x10alreadyConnected\"=\n" +
+	"\x1aBeginGitHubAppSetupRequest\x12\x1f\n" +
+	"\x06org_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x05orgId\"\x8f\x01\n" +
+	"\x1bBeginGitHubAppSetupResponse\x12\x1f\n" +
+	"\vinstall_url\x18\x01 \x01(\tR\n" +
+	"installUrl\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x129\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"\xc0\x01\n" +
+	"\x1dCompleteGitHubAppSetupRequest\x12\x1f\n" +
+	"\x06org_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x05orgId\x12 \n" +
+	"\x05state\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\x05state\x12<\n" +
+	"\x0finstallation_id\x18\x03 \x01(\tB\x13\xbaH\x10r\x0e\x10\x01\x18 2\b^[0-9]+$R\x0einstallationId\x12\x1e\n" +
+	"\x04code\x18\x04 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\xff\x01R\x04code\"\x94\x01\n" +
+	"\x1eCompleteGitHubAppSetupResponse\x12'\n" +
+	"\x0finstallation_id\x18\x01 \x01(\tR\x0einstallationId\x12I\n" +
+	"\frepositories\x18\x02 \x03(\v2%.saas.accounts.v1.GitHubAppRepositoryR\frepositories\"\\\n" +
+	"\x1fMigrateGitHubSourceToAppRequest\x12\x1f\n" +
+	"\x06org_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x05orgId\x12\x18\n" +
+	"\x02id\x18\x02 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"`\n" +
+	" MigrateGitHubSourceToAppResponse\x12<\n" +
+	"\n" +
+	"datasource\x18\x01 \x01(\v2\x1c.saas.accounts.v1.DatasourceR\n" +
+	"datasource*\xb7\x01\n" +
 	"\x12DatasourceProvider\x12#\n" +
 	"\x1fDATASOURCE_PROVIDER_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aDATASOURCE_PROVIDER_GITHUB\x10\x01\x12\x1b\n" +
@@ -2006,7 +2450,7 @@ const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
 	"\x19API_CREDENTIAL_KIND_BASIC\x10\x02\x12\x1e\n" +
 	"\x1aAPI_CREDENTIAL_KIND_HEADER\x10\x03\x12\x1d\n" +
 	"\x19API_CREDENTIAL_KIND_QUERY\x10\x04\x12\x1e\n" +
-	"\x1aAPI_CREDENTIAL_KIND_OAUTH2\x10\x052\xbd\b\n" +
+	"\x1aAPI_CREDENTIAL_KIND_OAUTH2\x10\x052\xa6\r\n" +
 	"\x11DatasourceService\x12\xac\x01\n" +
 	"\x0fAddGitHubSource\x12(.saas.accounts.v1.AddGitHubSourceRequest\x1a).saas.accounts.v1.AddGitHubSourceResponse\"D\xc2\xf3\x18@\b\x02\x10\x04*\f\n" +
 	"\x06org_id\x10\x02\x18\x010\x01: \n" +
@@ -2025,7 +2469,16 @@ const file_saas_accounts_v1_datasource_proto_rawDesc = "" +
 	"\x1dsaas.datasource.source.synced\x10\x02@\x01H\x04P\x04X\x02`\x01\x12\xa5\x01\n" +
 	"\fDeleteSource\x12%.saas.accounts.v1.DeleteSourceRequest\x1a&.saas.accounts.v1.DeleteSourceResponse\"F\xc2\xf3\x18B\b\x02\x10\x04*\f\n" +
 	"\x06org_id\x10\x02\x18\x010\x01:\"\n" +
-	"\x1esaas.datasource.source.removed\x10\x02@\x01H\x04P\x02X\x02`\x01B\xb7\x01\n" +
+	"\x1esaas.datasource.source.removed\x10\x02@\x01H\x04P\x02X\x02`\x01\x12\xc4\x01\n" +
+	"\x13BeginGitHubAppSetup\x12,.saas.accounts.v1.BeginGitHubAppSetupRequest\x1a-.saas.accounts.v1.BeginGitHubAppSetupResponse\"P\xc2\xf3\x18L\b\x02\x10\x04*\f\n" +
+	"\x06org_id\x10\x02\x18\x010\x01:,\n" +
+	"(saas.datasource.github_app.setup_started\x10\x02@\x01H\x04P\x02X\x04`\x01\x12\xcf\x01\n" +
+	"\x16CompleteGitHubAppSetup\x12/.saas.accounts.v1.CompleteGitHubAppSetupRequest\x1a0.saas.accounts.v1.CompleteGitHubAppSetupResponse\"R\xc2\xf3\x18N\b\x02\x10\x04*\f\n" +
+	"\x06org_id\x10\x02\x18\x010\x01:.\n" +
+	"*saas.datasource.github_app.setup_completed\x10\x02@\x01H\x04P\x04X\x03`\x01\x12\xcd\x01\n" +
+	"\x18MigrateGitHubSourceToApp\x121.saas.accounts.v1.MigrateGitHubSourceToAppRequest\x1a2.saas.accounts.v1.MigrateGitHubSourceToAppResponse\"J\xc2\xf3\x18F\b\x02\x10\x04*\f\n" +
+	"\x06org_id\x10\x02\x18\x010\x01:&\n" +
+	"\"saas.datasource.credential.updated\x10\x02@\x01H\x04P\x02X\x03`\x01B\xb7\x01\n" +
 	"\x14com.saas.accounts.v1B\x0fDatasourceProtoP\x01Z,accounts/pkg/gen/saas/accounts/v1;accountsv1\xa2\x02\x03SAX\xaa\x02\x10Saas.Accounts.V1\xca\x02\x10Saas\\Accounts\\V1\xe2\x02\x1cSaas\\Accounts\\V1\\GPBMetadata\xea\x02\x12Saas::Accounts::V1b\x06proto3"
 
 var (
@@ -2041,34 +2494,41 @@ func file_saas_accounts_v1_datasource_proto_rawDescGZIP() []byte {
 }
 
 var file_saas_accounts_v1_datasource_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_saas_accounts_v1_datasource_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_saas_accounts_v1_datasource_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_saas_accounts_v1_datasource_proto_goTypes = []any{
-	(DatasourceProvider)(0),              // 0: saas.accounts.v1.DatasourceProvider
-	(DatasourceStatus)(0),                // 1: saas.accounts.v1.DatasourceStatus
-	(ApiCredentialKind)(0),               // 2: saas.accounts.v1.ApiCredentialKind
-	(*GitHubDatasourceConfig)(nil),       // 3: saas.accounts.v1.GitHubDatasourceConfig
-	(*ApiOAuth2Config)(nil),              // 4: saas.accounts.v1.ApiOAuth2Config
-	(*ApiDatasourceConfig)(nil),          // 5: saas.accounts.v1.ApiDatasourceConfig
-	(*CrawlerDatasourceConfig)(nil),      // 6: saas.accounts.v1.CrawlerDatasourceConfig
-	(*UploadDatasourceConfig)(nil),       // 7: saas.accounts.v1.UploadDatasourceConfig
-	(*Datasource)(nil),                   // 8: saas.accounts.v1.Datasource
-	(*AddGitHubSourceRequest)(nil),       // 9: saas.accounts.v1.AddGitHubSourceRequest
-	(*AddGitHubSourceResponse)(nil),      // 10: saas.accounts.v1.AddGitHubSourceResponse
-	(*AddSourceRequest)(nil),             // 11: saas.accounts.v1.AddSourceRequest
-	(*AddSourceResponse)(nil),            // 12: saas.accounts.v1.AddSourceResponse
-	(*DatasourceConfigField)(nil),        // 13: saas.accounts.v1.DatasourceConfigField
-	(*DatasourceProviderDescriptor)(nil), // 14: saas.accounts.v1.DatasourceProviderDescriptor
-	(*GetDatasourceCatalogRequest)(nil),  // 15: saas.accounts.v1.GetDatasourceCatalogRequest
-	(*GetDatasourceCatalogResponse)(nil), // 16: saas.accounts.v1.GetDatasourceCatalogResponse
-	(*ListSourcesRequest)(nil),           // 17: saas.accounts.v1.ListSourcesRequest
-	(*ListSourcesResponse)(nil),          // 18: saas.accounts.v1.ListSourcesResponse
-	(*GetSourceRequest)(nil),             // 19: saas.accounts.v1.GetSourceRequest
-	(*GetSourceResponse)(nil),            // 20: saas.accounts.v1.GetSourceResponse
-	(*SyncSourceRequest)(nil),            // 21: saas.accounts.v1.SyncSourceRequest
-	(*SyncSourceResponse)(nil),           // 22: saas.accounts.v1.SyncSourceResponse
-	(*DeleteSourceRequest)(nil),          // 23: saas.accounts.v1.DeleteSourceRequest
-	(*DeleteSourceResponse)(nil),         // 24: saas.accounts.v1.DeleteSourceResponse
-	(*timestamppb.Timestamp)(nil),        // 25: google.protobuf.Timestamp
+	(DatasourceProvider)(0),                  // 0: saas.accounts.v1.DatasourceProvider
+	(DatasourceStatus)(0),                    // 1: saas.accounts.v1.DatasourceStatus
+	(ApiCredentialKind)(0),                   // 2: saas.accounts.v1.ApiCredentialKind
+	(*GitHubDatasourceConfig)(nil),           // 3: saas.accounts.v1.GitHubDatasourceConfig
+	(*ApiOAuth2Config)(nil),                  // 4: saas.accounts.v1.ApiOAuth2Config
+	(*ApiDatasourceConfig)(nil),              // 5: saas.accounts.v1.ApiDatasourceConfig
+	(*CrawlerDatasourceConfig)(nil),          // 6: saas.accounts.v1.CrawlerDatasourceConfig
+	(*UploadDatasourceConfig)(nil),           // 7: saas.accounts.v1.UploadDatasourceConfig
+	(*Datasource)(nil),                       // 8: saas.accounts.v1.Datasource
+	(*AddGitHubSourceRequest)(nil),           // 9: saas.accounts.v1.AddGitHubSourceRequest
+	(*AddGitHubSourceResponse)(nil),          // 10: saas.accounts.v1.AddGitHubSourceResponse
+	(*AddSourceRequest)(nil),                 // 11: saas.accounts.v1.AddSourceRequest
+	(*AddSourceResponse)(nil),                // 12: saas.accounts.v1.AddSourceResponse
+	(*DatasourceConfigField)(nil),            // 13: saas.accounts.v1.DatasourceConfigField
+	(*DatasourceProviderDescriptor)(nil),     // 14: saas.accounts.v1.DatasourceProviderDescriptor
+	(*GetDatasourceCatalogRequest)(nil),      // 15: saas.accounts.v1.GetDatasourceCatalogRequest
+	(*GetDatasourceCatalogResponse)(nil),     // 16: saas.accounts.v1.GetDatasourceCatalogResponse
+	(*ListSourcesRequest)(nil),               // 17: saas.accounts.v1.ListSourcesRequest
+	(*ListSourcesResponse)(nil),              // 18: saas.accounts.v1.ListSourcesResponse
+	(*GetSourceRequest)(nil),                 // 19: saas.accounts.v1.GetSourceRequest
+	(*GetSourceResponse)(nil),                // 20: saas.accounts.v1.GetSourceResponse
+	(*SyncSourceRequest)(nil),                // 21: saas.accounts.v1.SyncSourceRequest
+	(*SyncSourceResponse)(nil),               // 22: saas.accounts.v1.SyncSourceResponse
+	(*DeleteSourceRequest)(nil),              // 23: saas.accounts.v1.DeleteSourceRequest
+	(*DeleteSourceResponse)(nil),             // 24: saas.accounts.v1.DeleteSourceResponse
+	(*GitHubAppRepository)(nil),              // 25: saas.accounts.v1.GitHubAppRepository
+	(*BeginGitHubAppSetupRequest)(nil),       // 26: saas.accounts.v1.BeginGitHubAppSetupRequest
+	(*BeginGitHubAppSetupResponse)(nil),      // 27: saas.accounts.v1.BeginGitHubAppSetupResponse
+	(*CompleteGitHubAppSetupRequest)(nil),    // 28: saas.accounts.v1.CompleteGitHubAppSetupRequest
+	(*CompleteGitHubAppSetupResponse)(nil),   // 29: saas.accounts.v1.CompleteGitHubAppSetupResponse
+	(*MigrateGitHubSourceToAppRequest)(nil),  // 30: saas.accounts.v1.MigrateGitHubSourceToAppRequest
+	(*MigrateGitHubSourceToAppResponse)(nil), // 31: saas.accounts.v1.MigrateGitHubSourceToAppResponse
+	(*timestamppb.Timestamp)(nil),            // 32: google.protobuf.Timestamp
 }
 var file_saas_accounts_v1_datasource_proto_depIdxs = []int32{
 	2,  // 0: saas.accounts.v1.ApiDatasourceConfig.credential_kind:type_name -> saas.accounts.v1.ApiCredentialKind
@@ -2076,13 +2536,13 @@ var file_saas_accounts_v1_datasource_proto_depIdxs = []int32{
 	0,  // 2: saas.accounts.v1.Datasource.provider:type_name -> saas.accounts.v1.DatasourceProvider
 	3,  // 3: saas.accounts.v1.Datasource.github:type_name -> saas.accounts.v1.GitHubDatasourceConfig
 	1,  // 4: saas.accounts.v1.Datasource.status:type_name -> saas.accounts.v1.DatasourceStatus
-	25, // 5: saas.accounts.v1.Datasource.created_at:type_name -> google.protobuf.Timestamp
-	25, // 6: saas.accounts.v1.Datasource.updated_at:type_name -> google.protobuf.Timestamp
-	25, // 7: saas.accounts.v1.Datasource.last_synced_at:type_name -> google.protobuf.Timestamp
+	32, // 5: saas.accounts.v1.Datasource.created_at:type_name -> google.protobuf.Timestamp
+	32, // 6: saas.accounts.v1.Datasource.updated_at:type_name -> google.protobuf.Timestamp
+	32, // 7: saas.accounts.v1.Datasource.last_synced_at:type_name -> google.protobuf.Timestamp
 	5,  // 8: saas.accounts.v1.Datasource.api:type_name -> saas.accounts.v1.ApiDatasourceConfig
 	6,  // 9: saas.accounts.v1.Datasource.crawler:type_name -> saas.accounts.v1.CrawlerDatasourceConfig
 	7,  // 10: saas.accounts.v1.Datasource.upload:type_name -> saas.accounts.v1.UploadDatasourceConfig
-	25, // 11: saas.accounts.v1.Datasource.last_ingested_at:type_name -> google.protobuf.Timestamp
+	32, // 11: saas.accounts.v1.Datasource.last_ingested_at:type_name -> google.protobuf.Timestamp
 	8,  // 12: saas.accounts.v1.AddGitHubSourceResponse.datasource:type_name -> saas.accounts.v1.Datasource
 	0,  // 13: saas.accounts.v1.AddSourceRequest.provider:type_name -> saas.accounts.v1.DatasourceProvider
 	3,  // 14: saas.accounts.v1.AddSourceRequest.github:type_name -> saas.accounts.v1.GitHubDatasourceConfig
@@ -2096,25 +2556,34 @@ var file_saas_accounts_v1_datasource_proto_depIdxs = []int32{
 	14, // 22: saas.accounts.v1.GetDatasourceCatalogResponse.providers:type_name -> saas.accounts.v1.DatasourceProviderDescriptor
 	8,  // 23: saas.accounts.v1.ListSourcesResponse.datasources:type_name -> saas.accounts.v1.Datasource
 	8,  // 24: saas.accounts.v1.GetSourceResponse.datasource:type_name -> saas.accounts.v1.Datasource
-	9,  // 25: saas.accounts.v1.DatasourceService.AddGitHubSource:input_type -> saas.accounts.v1.AddGitHubSourceRequest
-	11, // 26: saas.accounts.v1.DatasourceService.AddSource:input_type -> saas.accounts.v1.AddSourceRequest
-	15, // 27: saas.accounts.v1.DatasourceService.GetDatasourceCatalog:input_type -> saas.accounts.v1.GetDatasourceCatalogRequest
-	17, // 28: saas.accounts.v1.DatasourceService.ListSources:input_type -> saas.accounts.v1.ListSourcesRequest
-	19, // 29: saas.accounts.v1.DatasourceService.GetSource:input_type -> saas.accounts.v1.GetSourceRequest
-	21, // 30: saas.accounts.v1.DatasourceService.SyncSource:input_type -> saas.accounts.v1.SyncSourceRequest
-	23, // 31: saas.accounts.v1.DatasourceService.DeleteSource:input_type -> saas.accounts.v1.DeleteSourceRequest
-	10, // 32: saas.accounts.v1.DatasourceService.AddGitHubSource:output_type -> saas.accounts.v1.AddGitHubSourceResponse
-	12, // 33: saas.accounts.v1.DatasourceService.AddSource:output_type -> saas.accounts.v1.AddSourceResponse
-	16, // 34: saas.accounts.v1.DatasourceService.GetDatasourceCatalog:output_type -> saas.accounts.v1.GetDatasourceCatalogResponse
-	18, // 35: saas.accounts.v1.DatasourceService.ListSources:output_type -> saas.accounts.v1.ListSourcesResponse
-	20, // 36: saas.accounts.v1.DatasourceService.GetSource:output_type -> saas.accounts.v1.GetSourceResponse
-	22, // 37: saas.accounts.v1.DatasourceService.SyncSource:output_type -> saas.accounts.v1.SyncSourceResponse
-	24, // 38: saas.accounts.v1.DatasourceService.DeleteSource:output_type -> saas.accounts.v1.DeleteSourceResponse
-	32, // [32:39] is the sub-list for method output_type
-	25, // [25:32] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	32, // 25: saas.accounts.v1.BeginGitHubAppSetupResponse.expires_at:type_name -> google.protobuf.Timestamp
+	25, // 26: saas.accounts.v1.CompleteGitHubAppSetupResponse.repositories:type_name -> saas.accounts.v1.GitHubAppRepository
+	8,  // 27: saas.accounts.v1.MigrateGitHubSourceToAppResponse.datasource:type_name -> saas.accounts.v1.Datasource
+	9,  // 28: saas.accounts.v1.DatasourceService.AddGitHubSource:input_type -> saas.accounts.v1.AddGitHubSourceRequest
+	11, // 29: saas.accounts.v1.DatasourceService.AddSource:input_type -> saas.accounts.v1.AddSourceRequest
+	15, // 30: saas.accounts.v1.DatasourceService.GetDatasourceCatalog:input_type -> saas.accounts.v1.GetDatasourceCatalogRequest
+	17, // 31: saas.accounts.v1.DatasourceService.ListSources:input_type -> saas.accounts.v1.ListSourcesRequest
+	19, // 32: saas.accounts.v1.DatasourceService.GetSource:input_type -> saas.accounts.v1.GetSourceRequest
+	21, // 33: saas.accounts.v1.DatasourceService.SyncSource:input_type -> saas.accounts.v1.SyncSourceRequest
+	23, // 34: saas.accounts.v1.DatasourceService.DeleteSource:input_type -> saas.accounts.v1.DeleteSourceRequest
+	26, // 35: saas.accounts.v1.DatasourceService.BeginGitHubAppSetup:input_type -> saas.accounts.v1.BeginGitHubAppSetupRequest
+	28, // 36: saas.accounts.v1.DatasourceService.CompleteGitHubAppSetup:input_type -> saas.accounts.v1.CompleteGitHubAppSetupRequest
+	30, // 37: saas.accounts.v1.DatasourceService.MigrateGitHubSourceToApp:input_type -> saas.accounts.v1.MigrateGitHubSourceToAppRequest
+	10, // 38: saas.accounts.v1.DatasourceService.AddGitHubSource:output_type -> saas.accounts.v1.AddGitHubSourceResponse
+	12, // 39: saas.accounts.v1.DatasourceService.AddSource:output_type -> saas.accounts.v1.AddSourceResponse
+	16, // 40: saas.accounts.v1.DatasourceService.GetDatasourceCatalog:output_type -> saas.accounts.v1.GetDatasourceCatalogResponse
+	18, // 41: saas.accounts.v1.DatasourceService.ListSources:output_type -> saas.accounts.v1.ListSourcesResponse
+	20, // 42: saas.accounts.v1.DatasourceService.GetSource:output_type -> saas.accounts.v1.GetSourceResponse
+	22, // 43: saas.accounts.v1.DatasourceService.SyncSource:output_type -> saas.accounts.v1.SyncSourceResponse
+	24, // 44: saas.accounts.v1.DatasourceService.DeleteSource:output_type -> saas.accounts.v1.DeleteSourceResponse
+	27, // 45: saas.accounts.v1.DatasourceService.BeginGitHubAppSetup:output_type -> saas.accounts.v1.BeginGitHubAppSetupResponse
+	29, // 46: saas.accounts.v1.DatasourceService.CompleteGitHubAppSetup:output_type -> saas.accounts.v1.CompleteGitHubAppSetupResponse
+	31, // 47: saas.accounts.v1.DatasourceService.MigrateGitHubSourceToApp:output_type -> saas.accounts.v1.MigrateGitHubSourceToAppResponse
+	38, // [38:48] is the sub-list for method output_type
+	28, // [28:38] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_saas_accounts_v1_datasource_proto_init() }
@@ -2140,7 +2609,7 @@ func file_saas_accounts_v1_datasource_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_saas_accounts_v1_datasource_proto_rawDesc), len(file_saas_accounts_v1_datasource_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   22,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
