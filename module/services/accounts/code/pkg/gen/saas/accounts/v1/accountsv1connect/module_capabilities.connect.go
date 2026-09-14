@@ -39,6 +39,9 @@ const (
 	// ModuleCapabilitiesServiceListReadableSourceCollectionsProcedure is the fully-qualified name of
 	// the ModuleCapabilitiesService's ListReadableSourceCollections RPC.
 	ModuleCapabilitiesServiceListReadableSourceCollectionsProcedure = "/saas.accounts.v1.ModuleCapabilitiesService/ListReadableSourceCollections"
+	// ModuleCapabilitiesServicePlaceRecordProcedure is the fully-qualified name of the
+	// ModuleCapabilitiesService's PlaceRecord RPC.
+	ModuleCapabilitiesServicePlaceRecordProcedure = "/saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord"
 	// ModuleCapabilitiesServiceEnqueueJobProcedure is the fully-qualified name of the
 	// ModuleCapabilitiesService's EnqueueJob RPC.
 	ModuleCapabilitiesServiceEnqueueJobProcedure = "/saas.accounts.v1.ModuleCapabilitiesService/EnqueueJob"
@@ -106,6 +109,10 @@ type ModuleCapabilitiesServiceClient interface {
 	// module declares, and current owner/actor and collection grants.
 	// The internal listener remains mandatory; callers cannot supply identities.
 	ListReadableSourceCollections(context.Context, *connect.Request[v1.ListReadableSourceCollectionsRequest]) (*connect.Response[v1.ListReadableSourceCollectionsResponse], error)
+	// PlaceRecord places one of the caller's own records at a scope node, so the
+	// access oracles can resolve it. Bounded by the resource types the caller
+	// principal's grant declares.
+	PlaceRecord(context.Context, *connect.Request[v1.ModulePlaceRecordRequest]) (*connect.Response[v1.ModulePlaceRecordResponse], error)
 	// EnqueueJob appends durable work for a tenant- or subject-scoped queue.
 	EnqueueJob(context.Context, *connect.Request[v1.ModuleEnqueueJobRequest]) (*connect.Response[v1.ModuleEnqueueJobResponse], error)
 	// ClaimJobs leases a bounded batch of ready jobs from an allowed queue.
@@ -173,6 +180,12 @@ func NewModuleCapabilitiesServiceClient(httpClient connect.HTTPClient, baseURL s
 			httpClient,
 			baseURL+ModuleCapabilitiesServiceListReadableSourceCollectionsProcedure,
 			connect.WithSchema(moduleCapabilitiesServiceMethods.ByName("ListReadableSourceCollections")),
+			connect.WithClientOptions(opts...),
+		),
+		placeRecord: connect.NewClient[v1.ModulePlaceRecordRequest, v1.ModulePlaceRecordResponse](
+			httpClient,
+			baseURL+ModuleCapabilitiesServicePlaceRecordProcedure,
+			connect.WithSchema(moduleCapabilitiesServiceMethods.ByName("PlaceRecord")),
 			connect.WithClientOptions(opts...),
 		),
 		enqueueJob: connect.NewClient[v1.ModuleEnqueueJobRequest, v1.ModuleEnqueueJobResponse](
@@ -295,6 +308,7 @@ func NewModuleCapabilitiesServiceClient(httpClient connect.HTTPClient, baseURL s
 // moduleCapabilitiesServiceClient implements ModuleCapabilitiesServiceClient.
 type moduleCapabilitiesServiceClient struct {
 	listReadableSourceCollections *connect.Client[v1.ListReadableSourceCollectionsRequest, v1.ListReadableSourceCollectionsResponse]
+	placeRecord                   *connect.Client[v1.ModulePlaceRecordRequest, v1.ModulePlaceRecordResponse]
 	enqueueJob                    *connect.Client[v1.ModuleEnqueueJobRequest, v1.ModuleEnqueueJobResponse]
 	claimJobs                     *connect.Client[v1.ModuleClaimJobsRequest, v1.ModuleClaimJobsResponse]
 	heartbeatJob                  *connect.Client[v1.ModuleHeartbeatJobRequest, v1.ModuleHeartbeatJobResponse]
@@ -320,6 +334,11 @@ type moduleCapabilitiesServiceClient struct {
 // saas.accounts.v1.ModuleCapabilitiesService.ListReadableSourceCollections.
 func (c *moduleCapabilitiesServiceClient) ListReadableSourceCollections(ctx context.Context, req *connect.Request[v1.ListReadableSourceCollectionsRequest]) (*connect.Response[v1.ListReadableSourceCollectionsResponse], error) {
 	return c.listReadableSourceCollections.CallUnary(ctx, req)
+}
+
+// PlaceRecord calls saas.accounts.v1.ModuleCapabilitiesService.PlaceRecord.
+func (c *moduleCapabilitiesServiceClient) PlaceRecord(ctx context.Context, req *connect.Request[v1.ModulePlaceRecordRequest]) (*connect.Response[v1.ModulePlaceRecordResponse], error) {
+	return c.placeRecord.CallUnary(ctx, req)
 }
 
 // EnqueueJob calls saas.accounts.v1.ModuleCapabilitiesService.EnqueueJob.
@@ -426,6 +445,10 @@ type ModuleCapabilitiesServiceHandler interface {
 	// module declares, and current owner/actor and collection grants.
 	// The internal listener remains mandatory; callers cannot supply identities.
 	ListReadableSourceCollections(context.Context, *connect.Request[v1.ListReadableSourceCollectionsRequest]) (*connect.Response[v1.ListReadableSourceCollectionsResponse], error)
+	// PlaceRecord places one of the caller's own records at a scope node, so the
+	// access oracles can resolve it. Bounded by the resource types the caller
+	// principal's grant declares.
+	PlaceRecord(context.Context, *connect.Request[v1.ModulePlaceRecordRequest]) (*connect.Response[v1.ModulePlaceRecordResponse], error)
 	// EnqueueJob appends durable work for a tenant- or subject-scoped queue.
 	EnqueueJob(context.Context, *connect.Request[v1.ModuleEnqueueJobRequest]) (*connect.Response[v1.ModuleEnqueueJobResponse], error)
 	// ClaimJobs leases a bounded batch of ready jobs from an allowed queue.
@@ -489,6 +512,12 @@ func NewModuleCapabilitiesServiceHandler(svc ModuleCapabilitiesServiceHandler, o
 		ModuleCapabilitiesServiceListReadableSourceCollectionsProcedure,
 		svc.ListReadableSourceCollections,
 		connect.WithSchema(moduleCapabilitiesServiceMethods.ByName("ListReadableSourceCollections")),
+		connect.WithHandlerOptions(opts...),
+	)
+	moduleCapabilitiesServicePlaceRecordHandler := connect.NewUnaryHandler(
+		ModuleCapabilitiesServicePlaceRecordProcedure,
+		svc.PlaceRecord,
+		connect.WithSchema(moduleCapabilitiesServiceMethods.ByName("PlaceRecord")),
 		connect.WithHandlerOptions(opts...),
 	)
 	moduleCapabilitiesServiceEnqueueJobHandler := connect.NewUnaryHandler(
@@ -609,6 +638,8 @@ func NewModuleCapabilitiesServiceHandler(svc ModuleCapabilitiesServiceHandler, o
 		switch r.URL.Path {
 		case ModuleCapabilitiesServiceListReadableSourceCollectionsProcedure:
 			moduleCapabilitiesServiceListReadableSourceCollectionsHandler.ServeHTTP(w, r)
+		case ModuleCapabilitiesServicePlaceRecordProcedure:
+			moduleCapabilitiesServicePlaceRecordHandler.ServeHTTP(w, r)
 		case ModuleCapabilitiesServiceEnqueueJobProcedure:
 			moduleCapabilitiesServiceEnqueueJobHandler.ServeHTTP(w, r)
 		case ModuleCapabilitiesServiceClaimJobsProcedure:
@@ -658,6 +689,10 @@ type UnimplementedModuleCapabilitiesServiceHandler struct{}
 
 func (UnimplementedModuleCapabilitiesServiceHandler) ListReadableSourceCollections(context.Context, *connect.Request[v1.ListReadableSourceCollectionsRequest]) (*connect.Response[v1.ListReadableSourceCollectionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("saas.accounts.v1.ModuleCapabilitiesService.ListReadableSourceCollections is not implemented"))
+}
+
+func (UnimplementedModuleCapabilitiesServiceHandler) PlaceRecord(context.Context, *connect.Request[v1.ModulePlaceRecordRequest]) (*connect.Response[v1.ModulePlaceRecordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("saas.accounts.v1.ModuleCapabilitiesService.PlaceRecord is not implemented"))
 }
 
 func (UnimplementedModuleCapabilitiesServiceHandler) EnqueueJob(context.Context, *connect.Request[v1.ModuleEnqueueJobRequest]) (*connect.Response[v1.ModuleEnqueueJobResponse], error) {

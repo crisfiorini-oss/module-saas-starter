@@ -424,12 +424,77 @@ message ListReadableSourceCollectionsResponse {
   string next_page_token = 2;
 }
 
+// ---------------------------------------------------------------------------
+// Record placement
+// ---------------------------------------------------------------------------
+
+// ModulePlaceRecordRequest binds one of the calling module's own records to a
+// node of the tenant's scope tree. Placement is what makes a record resolvable
+// at all: CheckAccess and ListAccessibleScopes read a record's true scope from
+// its own registered node and accept no caller-supplied path, so a record that
+// was never placed is denied to every subject.
+//
+// resource_type must be one the caller principal's grant declares, which is the
+// authority bound: a module places only records governed by the vocabulary its
+// composition declared for it, so it can neither introduce a resource type it
+// holds no grant for nor re-point another module's records.
+message ModulePlaceRecordRequest {
+  string tenant = 1 [(buf.validate.field).string.uuid = true];
+  // The record's own leaf path, unique within the tenant, whose parent must
+  // already be registered. Labels are the lowercase ltree charset, so an opaque
+  // id is encoded (lowercase, '-' -> '_') before it is used as one.
+  string scope_path = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 512
+    pattern: "^[a-z0-9_]+(?:\\.[a-z0-9_]+)*$"
+  }];
+  string kind = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+  string label = 4 [(buf.validate.field).string.max_len = 255];
+  string resource_type = 5 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+  string resource_id = 6 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 512
+  }];
+}
+
+message ModulePlaceRecordResponse {
+  // The scope node the record is placed at. Placing the same record at the same
+  // path again is an accepted no-op returning the same id, which is what the
+  // surface's at-least-once contract needs; placing it at a different path is
+  // refused, because a record resolves through exactly one node and moving it
+  // would silently rewrite who can reach it.
+  string node_id = 1 [(buf.validate.field).string.uuid = true];
+}
+
 service ModuleCapabilitiesService {
   // The forwarded viewer Work Context names the calling module in its audience;
   // this read verifies it carries kind-wide read on a content resource type that
   // module declares, and current owner/actor and collection grants.
   // The internal listener remains mandatory; callers cannot supply identities.
   rpc ListReadableSourceCollections(ListReadableSourceCollectionsRequest) returns (ListReadableSourceCollectionsResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_INTERNAL
+      tenant: TENANT_REQUIREMENT_NONE
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {emission: AUDIT_EMISSION_NONE}
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_INTERNAL
+      request_sensitivity: SENSITIVITY_CONFIDENTIAL
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+  }
+
+  // PlaceRecord places one of the caller's own records at a scope node, so the
+  // access oracles can resolve it. Bounded by the resource types the caller
+  // principal's grant declares.
+  rpc PlaceRecord(ModulePlaceRecordRequest) returns (ModulePlaceRecordResponse) {
     option (saas.policy.v1.method_policy) = {
       exposure: EXPOSURE_INTERNAL
       tenant: TENANT_REQUIREMENT_NONE

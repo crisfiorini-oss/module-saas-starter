@@ -103,6 +103,7 @@ const METHOD_CONTEXTS = {
   "ModuleCapabilitiesService/MintSolutionRegistration": "authorization",
   "ModuleCapabilitiesService/NackJob": "jobs",
   "ModuleCapabilitiesService/NotifyUser": "notifications",
+  "ModuleCapabilitiesService/PlaceRecord": "authorization",
   "ModuleCapabilitiesService/PublishEvent": "events",
   "ModuleCapabilitiesService/ReplayEvents": "events",
   "ModuleCapabilitiesService/RequestApproval": "approvals",

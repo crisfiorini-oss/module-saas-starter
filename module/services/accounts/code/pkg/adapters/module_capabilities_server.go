@@ -384,6 +384,21 @@ func writeDatasourceBlobFrames(content []byte, contentType string, stream dataso
 	}
 }
 
+func (s *ModuleCapabilitiesServer) PlaceRecord(ctx context.Context, req *gen.ModulePlaceRecordRequest) (*gen.ModulePlaceRecordResponse, error) {
+	if err := Validate(req); err != nil {
+		return nil, err
+	}
+	caller, err := moduleCaller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nodeID, err := service.ModulePlaceRecord(ctx, caller, req.GetTenant(), req.GetScopePath(), req.GetKind(), req.GetLabel(), req.GetResourceType(), req.GetResourceId())
+	if err != nil {
+		return nil, err
+	}
+	return &gen.ModulePlaceRecordResponse{NodeId: nodeID}, nil
+}
+
 func (s *ModuleCapabilitiesServer) PublishEvent(ctx context.Context, req *gen.ModulePublishEventRequest) (*gen.ModulePublishEventResponse, error) {
 	if err := Validate(req); err != nil {
 		return nil, err

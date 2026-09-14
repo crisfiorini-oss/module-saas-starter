@@ -193,8 +193,8 @@ commit + PublishEvent  ──▶  domain_events  ──▶  relay  ──▶  fo
 Because the worker runs in-process in accounts, it resolves access through the
 store directly and needs **no new module-facing RPC**. This matters: `CheckAccess`
 and `ListAccessibleScopes` live on `PermissionService` at `EXPOSURE_INTERNAL`,
-and neither appears among the twenty RPCs on `ModuleCapabilitiesService`. A
-sibling module could not perform these rechecks itself even if it wanted to.
+and neither is on `ModuleCapabilitiesService`. A sibling module could not perform
+these rechecks itself even if it wanted to.
 
 The host holds no owner-specific branch anywhere in this path: matching is
 driven by the declaration, the target by `subject`, and access by the generic
@@ -310,11 +310,17 @@ otherwise `CheckAccess` correctly denies and nothing is ever delivered — the
 fail-closed direction, but inert.
 
 `RegisterScopeNode` and `ShareRecord` are `EXPOSURE_AUTHENTICATED` with
-`TENANT_REQUIREMENT_ORG_ADMIN`, and neither is on `ModuleCapabilitiesService`.
-**A module principal therefore cannot place its own records today.** Profile 1
-is specified against resources already placed by an org admin; a module-facing
-placement path is a prerequisite for a module to make its own resources
-followable, and is tracked separately rather than assumed here.
+`TENANT_REQUIREMENT_ORG_ADMIN`, so an org administrator places any record in the
+tenant. A module places its **own** records through
+`ModuleCapabilitiesService.PlaceRecord`, bounded by the resource types its
+principal grant declares (#703; `services/accounts/AUTHZ.md` § Who may place a
+record). Profile 1 therefore holds for module-owned resources as well as
+admin-placed ones — but only once the resource is placed by one of the two, and
+a module that declares no `resources` still places nothing.
+
+`ShareRecord` remains org-admin only: a module makes its records *resolvable*,
+never entitled. Who may read one stays a tenant decision, which is what keeps a
+follow an intent to be told rather than a way to widen access.
 
 ## Profiles
 

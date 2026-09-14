@@ -72,6 +72,10 @@ func (h *moduleCapabilitiesConnectHandler) FetchDatasourceBlob(ctx context.Conte
 	return streamDatasourceBlob(ctx, req.Msg, stream)
 }
 
+func (h *moduleCapabilitiesConnectHandler) PlaceRecord(ctx context.Context, req *connect.Request[gen.ModulePlaceRecordRequest]) (*connect.Response[gen.ModulePlaceRecordResponse], error) {
+	return unary(ctx, req, h.inner.PlaceRecord)
+}
+
 func (h *moduleCapabilitiesConnectHandler) PublishEvent(ctx context.Context, req *connect.Request[gen.ModulePublishEventRequest]) (*connect.Response[gen.ModulePublishEventResponse], error) {
 	return unary(ctx, req, h.inner.PublishEvent)
 }

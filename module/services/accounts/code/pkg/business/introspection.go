@@ -148,6 +148,7 @@ var rpcDescriptions = withWorkContextConsumerDescriptions(map[string]string{
 	"ModuleCapabilitiesService/GetApproval":                   "Read one approval request on the caller's tenant.",
 	"ModuleCapabilitiesService/CancelApproval":                "Withdraw a still-open approval request.",
 	"ModuleCapabilitiesService/ListReadableSourceCollections": "List source collections the verified viewer may currently read.",
+	"ModuleCapabilitiesService/PlaceRecord":                   "Place one of the caller's own records at a scope node.",
 	"ModuleCapabilitiesService/EmitAuditEvent":                "Emit a registered audit event on the tenant's spine.",
 	"ModuleCapabilitiesService/FetchDatasourceBlob":           "Stream a datasource file blob referenced by a change set.",
 	"ModuleCapabilitiesService/MintModuleRegistration":        "Issue a composed module the signed credential it registers its gateway REST prefix with.",

@@ -3229,6 +3229,42 @@
       "rate_limit_backend_failure_mode": "RATE_LIMIT_BACKEND_FAILURE_MODE_FAIL_OPEN"
     },
     {
+      "procedure": "/saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord",
+      "full_service": "saas.accounts.v1.ModuleCapabilitiesService",
+      "method": "PlaceRecord",
+      "input_type": "saas.accounts.v1.ModulePlaceRecordRequest",
+      "output_type": "saas.accounts.v1.ModulePlaceRecordResponse",
+      "client_streaming": false,
+      "server_streaming": false,
+      "policy": {
+        "exposure": "EXPOSURE_INTERNAL",
+        "tenant": "TENANT_REQUIREMENT_NONE",
+        "permissions": [],
+        "scopes": [],
+        "resource_bindings": [],
+        "mfa": "MFA_REQUIREMENT_NONE",
+        "audit": {
+          "events": [],
+          "emission": "AUDIT_EMISSION_NONE"
+        },
+        "idempotency": "IDEMPOTENCY_REQUIREMENT_FORBIDDEN",
+        "rate_limit": "RATE_LIMIT_CLASS_INTERNAL",
+        "request_sensitivity": "SENSITIVITY_CONFIDENTIAL",
+        "response_sensitivity": "SENSITIVITY_CONFIDENTIAL",
+        "platform_role": "PLATFORM_ROLE_REQUIREMENT_NONE",
+        "authentication_factor_attempt": false,
+        "conditions": []
+      },
+      "policy_tier": "internal",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      },
+      "source_proto": "saas/accounts/v1/module_capabilities.proto",
+      "policy_sha256": "45df71bfa7f313b565b0e8c314557847bab913990d43ba59b97d755412b4a4fd",
+      "rate_limit_backend_failure_mode": "RATE_LIMIT_BACKEND_FAILURE_MODE_FAIL_OPEN"
+    },
+    {
       "procedure": "/saas.accounts.v1.ModuleCapabilitiesService/PublishEvent",
       "full_service": "saas.accounts.v1.ModuleCapabilitiesService",
       "method": "PublishEvent",

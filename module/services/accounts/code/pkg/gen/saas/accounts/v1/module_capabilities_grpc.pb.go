@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ModuleCapabilitiesService_ListReadableSourceCollections_FullMethodName = "/saas.accounts.v1.ModuleCapabilitiesService/ListReadableSourceCollections"
+	ModuleCapabilitiesService_PlaceRecord_FullMethodName                   = "/saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord"
 	ModuleCapabilitiesService_EnqueueJob_FullMethodName                    = "/saas.accounts.v1.ModuleCapabilitiesService/EnqueueJob"
 	ModuleCapabilitiesService_ClaimJobs_FullMethodName                     = "/saas.accounts.v1.ModuleCapabilitiesService/ClaimJobs"
 	ModuleCapabilitiesService_HeartbeatJob_FullMethodName                  = "/saas.accounts.v1.ModuleCapabilitiesService/HeartbeatJob"
@@ -52,6 +53,10 @@ type ModuleCapabilitiesServiceClient interface {
 	// module declares, and current owner/actor and collection grants.
 	// The internal listener remains mandatory; callers cannot supply identities.
 	ListReadableSourceCollections(ctx context.Context, in *ListReadableSourceCollectionsRequest, opts ...grpc.CallOption) (*ListReadableSourceCollectionsResponse, error)
+	// PlaceRecord places one of the caller's own records at a scope node, so the
+	// access oracles can resolve it. Bounded by the resource types the caller
+	// principal's grant declares.
+	PlaceRecord(ctx context.Context, in *ModulePlaceRecordRequest, opts ...grpc.CallOption) (*ModulePlaceRecordResponse, error)
 	// EnqueueJob appends durable work for a tenant- or subject-scoped queue.
 	EnqueueJob(ctx context.Context, in *ModuleEnqueueJobRequest, opts ...grpc.CallOption) (*ModuleEnqueueJobResponse, error)
 	// ClaimJobs leases a bounded batch of ready jobs from an allowed queue.
@@ -116,6 +121,16 @@ func (c *moduleCapabilitiesServiceClient) ListReadableSourceCollections(ctx cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListReadableSourceCollectionsResponse)
 	err := c.cc.Invoke(ctx, ModuleCapabilitiesService_ListReadableSourceCollections_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *moduleCapabilitiesServiceClient) PlaceRecord(ctx context.Context, in *ModulePlaceRecordRequest, opts ...grpc.CallOption) (*ModulePlaceRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ModulePlaceRecordResponse)
+	err := c.cc.Invoke(ctx, ModuleCapabilitiesService_PlaceRecord_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -330,6 +345,10 @@ type ModuleCapabilitiesServiceServer interface {
 	// module declares, and current owner/actor and collection grants.
 	// The internal listener remains mandatory; callers cannot supply identities.
 	ListReadableSourceCollections(context.Context, *ListReadableSourceCollectionsRequest) (*ListReadableSourceCollectionsResponse, error)
+	// PlaceRecord places one of the caller's own records at a scope node, so the
+	// access oracles can resolve it. Bounded by the resource types the caller
+	// principal's grant declares.
+	PlaceRecord(context.Context, *ModulePlaceRecordRequest) (*ModulePlaceRecordResponse, error)
 	// EnqueueJob appends durable work for a tenant- or subject-scoped queue.
 	EnqueueJob(context.Context, *ModuleEnqueueJobRequest) (*ModuleEnqueueJobResponse, error)
 	// ClaimJobs leases a bounded batch of ready jobs from an allowed queue.
@@ -392,6 +411,9 @@ type UnimplementedModuleCapabilitiesServiceServer struct{}
 
 func (UnimplementedModuleCapabilitiesServiceServer) ListReadableSourceCollections(context.Context, *ListReadableSourceCollectionsRequest) (*ListReadableSourceCollectionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListReadableSourceCollections not implemented")
+}
+func (UnimplementedModuleCapabilitiesServiceServer) PlaceRecord(context.Context, *ModulePlaceRecordRequest) (*ModulePlaceRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PlaceRecord not implemented")
 }
 func (UnimplementedModuleCapabilitiesServiceServer) EnqueueJob(context.Context, *ModuleEnqueueJobRequest) (*ModuleEnqueueJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method EnqueueJob not implemented")
@@ -486,6 +508,24 @@ func _ModuleCapabilitiesService_ListReadableSourceCollections_Handler(srv interf
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ModuleCapabilitiesServiceServer).ListReadableSourceCollections(ctx, req.(*ListReadableSourceCollectionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ModuleCapabilitiesService_PlaceRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ModulePlaceRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ModuleCapabilitiesServiceServer).PlaceRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ModuleCapabilitiesService_PlaceRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ModuleCapabilitiesServiceServer).PlaceRecord(ctx, req.(*ModulePlaceRecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -835,6 +875,10 @@ var ModuleCapabilitiesService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListReadableSourceCollections",
 			Handler:    _ModuleCapabilitiesService_ListReadableSourceCollections_Handler,
+		},
+		{
+			MethodName: "PlaceRecord",
+			Handler:    _ModuleCapabilitiesService_PlaceRecord_Handler,
 		},
 		{
 			MethodName: "EnqueueJob",

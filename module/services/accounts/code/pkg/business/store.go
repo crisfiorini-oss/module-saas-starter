@@ -346,6 +346,11 @@ type Store interface {
 	ListAccessibleScopes(ctx context.Context, orgID, subjectID string, subjectKind gen.SubjectKind, resourceType, action, afterPath string, limit int) ([]*gen.AccessibleScope, error)
 	CanReadScopeNode(ctx context.Context, orgID, subjectID string, subjectKind gen.SubjectKind, resourceType, action, nodeID string) (bool, error)
 	RegisterScopeNode(ctx context.Context, node *gen.ScopeNode) error
+	// PlaceRecordNode registers node as the placement of its
+	// (ResourceType, ResourceId) record, or returns the node that record is
+	// already placed at, unchanged. Run under WithOrgTx. The caller tells the two
+	// apart by comparing the returned node's id with the one it offered.
+	PlaceRecordNode(ctx context.Context, node *gen.ScopeNode) (*gen.ScopeNode, error)
 	// GetOrCreateCollectionNode reuses an existing collection node with node.Label
 	// in the tenant, or registers node and returns its id — one boundary per
 	// collection name. Run under WithOrgTx.

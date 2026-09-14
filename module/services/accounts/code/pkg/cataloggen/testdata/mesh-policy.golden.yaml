@@ -45,6 +45,7 @@ spec:
               - /saas.accounts.v1.ModuleCapabilitiesService/MintSolutionRegistration
               - /saas.accounts.v1.ModuleCapabilitiesService/NackJob
               - /saas.accounts.v1.ModuleCapabilitiesService/NotifyUser
+              - /saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord
               - /saas.accounts.v1.ModuleCapabilitiesService/PublishEvent
               - /saas.accounts.v1.ModuleCapabilitiesService/ReplayEvents
               - /saas.accounts.v1.ModuleCapabilitiesService/RequestApproval

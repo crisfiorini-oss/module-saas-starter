@@ -27,6 +27,7 @@ import (
 	"accounts/pkg/datasource/github"
 	"accounts/pkg/eventcatalog"
 	"accounts/pkg/events"
+	gen "accounts/pkg/gen/saas/accounts/v1"
 	jobsv1 "accounts/pkg/gen/saas/jobs/v1"
 	"accounts/pkg/jobs"
 
@@ -60,6 +61,18 @@ type ModulePrincipalGrant struct {
 func (g ModulePrincipalGrant) allowsQueue(queue string) bool {
 	for _, q := range g.Queues {
 		if q == queue {
+			return true
+		}
+	}
+	return false
+}
+
+// allowsResource reports whether the principal's own content is governed by the
+// given permission resource type. The registry is the allowlist, so a module
+// that declares no resources may place nothing (fail-closed).
+func (g ModulePrincipalGrant) allowsResource(resource string) bool {
+	for _, r := range g.Resources {
+		if r == resource {
 			return true
 		}
 	}
@@ -692,6 +705,66 @@ func (s *Service) ModuleEmitAuditEvent(ctx context.Context, caller ModuleCaller,
 		return status.Error(codes.Internal, err.Error())
 	}
 	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Record placement
+// ---------------------------------------------------------------------------
+
+// ModulePlaceRecord binds one of the calling module's records to a node of the
+// tenant's scope tree and returns that node's id. Placement is what makes a
+// record resolvable at all: CheckAccess and ListAccessibleScopes read a record's
+// true scope from its own registered node and accept no caller-supplied path, so
+// a record that was never placed is denied to every subject.
+//
+// The authority bound is the resource vocabulary the composition declared for
+// this principal. A module may place a record only under a resource type its own
+// grant names, so it can neither introduce a type it holds no grant for nor
+// re-point a record another module owns.
+func (s *Service) ModulePlaceRecord(ctx context.Context, caller ModuleCaller, tenant, scopePath, kind, label, resourceType, resourceID string) (string, error) {
+	grant, err := s.moduleGrant(caller)
+	if err != nil {
+		return "", err
+	}
+	if !grant.allowsResource(resourceType) {
+		return "", status.Errorf(codes.PermissionDenied, "principal %s may not place records of resource type %q", caller.PrincipalID, resourceType)
+	}
+	if err := authorizeTenant(caller, grant, tenant); err != nil {
+		return "", err
+	}
+
+	offered := &gen.ScopeNode{
+		Id:           NewIDString(),
+		OrgId:        tenant,
+		ScopePath:    scopePath,
+		Kind:         kind,
+		Label:        label,
+		ResourceType: resourceType,
+		ResourceId:   resourceID,
+	}
+	var nodeID string
+	if err := s.store.WithOrgTx(ctx, tenant, func(ctx context.Context) error {
+		placed, err := s.store.PlaceRecordNode(ctx, offered)
+		if err != nil {
+			return err
+		}
+		nodeID = placed.Id
+		if placed.Id != offered.Id {
+			// Already placed — the retry this surface's at-least-once contract
+			// expects, unless the caller named a different path. A record resolves
+			// through exactly one node, so moving it would silently rewrite who can
+			// reach it; that is an authorization change, not a placement.
+			if placed.ScopePath != scopePath {
+				return status.Errorf(codes.FailedPrecondition, "record is already placed at scope %q", placed.ScopePath)
+			}
+			return nil
+		}
+		return s.emitTx(ctx, caller.PrincipalID, "agent", EventScopeNodeRegistered, "scope_node", placed.Id, tenant,
+			map[string]any{"scope_path": placed.ScopePath, "kind": placed.Kind})
+	}); err != nil {
+		return "", err
+	}
+	return nodeID, nil
 }
 
 // ---------------------------------------------------------------------------

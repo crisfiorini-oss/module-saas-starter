@@ -127,6 +127,60 @@ func TestCheckAccess_ResolvesRecordScopeFromResourceIDNotCaller(t *testing.T) {
 		"an unplaced record has no resolvable scope and must fail closed on the scope branch")
 }
 
+// PlaceRecordNode is the store half of the module-facing placement path. A
+// record maps to exactly one node, so placing the same record again returns the
+// node it already has instead of colliding with idx_scope_nodes_resource — and
+// that node is what CheckAccess then resolves the record's scope from.
+func TestPlaceRecordNode_IdempotentOnTheRecord(t *testing.T) {
+	orgID, principalID, roleID := layeredFixture(t, "doc", "read")
+
+	registerNode(t, orgID, "tree", "root", "", "")
+	registerNode(t, orgID, "tree.other", "space", "", "")
+
+	place := func(path string) *gen.ScopeNode {
+		t.Helper()
+		var placed *gen.ScopeNode
+		require.NoError(t, testStore.WithOrgTx(testCtx, orgID, func(ctx context.Context) error {
+			var err error
+			placed, err = testStore.PlaceRecordNode(ctx, &gen.ScopeNode{
+				Id:           business.NewIDString(),
+				OrgId:        orgID,
+				ScopePath:    path,
+				Kind:         "record",
+				Label:        path,
+				ResourceType: "doc",
+				ResourceId:   "placed-doc",
+			})
+			return err
+		}))
+		return placed
+	}
+
+	first := place("tree.doc_1")
+	require.Equal(t, "tree.doc_1", first.ScopePath)
+
+	require.Equal(t, first.Id, place("tree.doc_1").Id,
+		"placing the same record at the same path must return the node it already has")
+
+	elsewhere := place("tree.other.doc_1")
+	require.Equal(t, first.Id, elsewhere.Id, "a placed record is never silently re-pointed")
+	require.Equal(t, "tree.doc_1", elsewhere.ScopePath,
+		"the caller learns the path the record actually sits at, so it can refuse the move")
+
+	require.NoError(t, testStore.WithOrgTx(testCtx, orgID, func(ctx context.Context) error {
+		return testStore.GrantScope(ctx, &gen.ScopeGrant{
+			Id:          business.NewIDString(),
+			OrgId:       orgID,
+			SubjectId:   principalID,
+			SubjectKind: gen.SubjectKind_SUBJECT_KIND_PRINCIPAL,
+			ScopePath:   "tree",
+			RoleId:      roleID,
+		})
+	}))
+	require.True(t, checkAccess(t, orgID, principalID, gen.SubjectKind_SUBJECT_KIND_PRINCIPAL, "doc", "placed-doc", "read"),
+		"a placed record resolves its scope from the node PlaceRecordNode created")
+}
+
 // A direct record share grants access to exactly that record, independent of the
 // scope hierarchy, and only for that record.
 func TestCheckAccess_PerRecordShare(t *testing.T) {

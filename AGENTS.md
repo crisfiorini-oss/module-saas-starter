@@ -217,9 +217,12 @@ on-demand refresh on a cache miss; frontend a 5s snapshot TTL).
   derived from the same registration prefix (`business.ModulePrincipalID`), so
   nothing is hand-authored as an opaque id. Its authority is declared in the
   `module-capabilities` group's `MODULE_PRINCIPALS`, a JSON map keyed by that
-  prefix: `queues` (enqueue and claim), `namespaces` (event publish), `tenant`
-  (the org it is bound to), `cross_tenant` (an inbox worker serving every
-  tenant). Unset means no module may call the surface.
+  prefix: `queues` (enqueue and claim), `namespaces` (event publish),
+  `resources` (the permission resource types its own content is governed by,
+  which bound both the content reads this host authorizes for it and the records
+  it may place at a scope node), `tenant` (the org it is bound to),
+  `cross_tenant` (an inbox worker serving every tenant). Unset means no module
+  may call the surface.
 
   The identity itself is a **Work Context**, obtained with a second exchange that
   mirrors the registration one: `POST /modules/_work-context` on the auth-gateway

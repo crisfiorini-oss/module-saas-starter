@@ -300,6 +300,54 @@ func (s *PostgresStore) GetOrCreateCollectionNode(ctx context.Context, node *gen
 	return node.Id, nil
 }
 
+// PlaceRecordNode registers node as the placement of its (ResourceType,
+// ResourceId) record, or returns the node that record is already placed at.
+//
+// A record maps to exactly one node (idx_scope_nodes_resource), so a second
+// placement of the same record would otherwise surface as a unique violation
+// rather than as the accepted no-op the module surface's at-least-once contract
+// needs. The advisory lock serializes the read-then-insert on the record key,
+// as GetOrCreateCollectionNode does on the collection label, so two concurrent
+// placements agree on one node instead of racing the index. Runs inside
+// WithOrgTx, so RLS confines both the lookup and the insert to the tenant.
+func (s *PostgresStore) PlaceRecordNode(ctx context.Context, node *gen.ScopeNode) (*gen.ScopeNode, error) {
+	w := wool.Get(ctx).In("PlaceRecordNode")
+	executor := s.getQueryExecutor(ctx)
+
+	if node.ResourceType == "" || node.ResourceId == "" {
+		return nil, status.Error(codes.InvalidArgument, "resource_type and resource_id must be set together")
+	}
+	if _, err := executor.Exec(ctx,
+		`SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))`,
+		node.OrgId, node.ResourceType+"/"+node.ResourceId,
+	); err != nil {
+		return nil, w.Wrapf(err, "failed to lock record placement")
+	}
+
+	existing := &gen.ScopeNode{
+		OrgId:        node.OrgId,
+		ResourceType: node.ResourceType,
+		ResourceId:   node.ResourceId,
+	}
+	var createdAt time.Time
+	err := executor.QueryRow(ctx, `
+		SELECT id::text, scope_path::text, kind, label, created_at FROM scope_nodes
+		WHERE resource_type = $1 AND resource_id = $2`,
+		node.ResourceType, node.ResourceId,
+	).Scan(&existing.Id, &existing.ScopePath, &existing.Kind, &existing.Label, &createdAt)
+	if err == nil {
+		existing.CreatedAt = timestamppb.New(createdAt)
+		return existing, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, w.Wrapf(err, "failed to look up record placement")
+	}
+	if err := s.RegisterScopeNode(ctx, node); err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 // ScopeNodeExists reports whether nodeID is a scope node visible in the caller's
 // tenant. Run under WithOrgTx so the RLS policy confines the probe to the org;
 // this is the org-membership check the datasource boundary FK cannot make (RI

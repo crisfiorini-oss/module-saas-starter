@@ -19,6 +19,29 @@ authorization decision reads only paths, grants, shares, and role permissions.
 Kinds are therefore **conventions for humans and tooling**, not an enforced
 enum.
 
+## Who may place a record
+
+The access oracles resolve a record's scope from its own node, so a record is
+reachable only once it is **placed** — registered with its `(resource_type,
+resource_id)`. Two callers may place one, under different bounds:
+
+| Caller | RPC | Bound |
+| ------ | --- | ----- |
+| Org administrator | `PermissionService.RegisterScopeNode` | the caller's tenant; any resource type |
+| Composed module | `ModuleCapabilitiesService.PlaceRecord` | its bound tenant, and only the resource types its own principal grant declares |
+
+The module bound is the `resources` list of `MODULE_PRINCIPALS` — the same
+declaration that says which content this host will authorize reads of, so a
+module's placement authority and its read authority cannot drift apart. A module
+that declares no resources places nothing: the surface fails closed on an absent
+composition rather than inventing an authority for it.
+
+Placement is idempotent on the record — re-placing it at the same path returns
+the same node, which is what the module surface's at-least-once contract needs.
+Re-pointing it at a **different** path is refused. A record resolves through
+exactly one node, so moving it rewrites who can reach it; that is an
+authorization change, and no surface performs it today.
+
 ## Data boundary = scope node
 
 The data boundary *below the tenant* is not a new container table; it is a scope
