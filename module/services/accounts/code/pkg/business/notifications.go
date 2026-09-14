@@ -19,8 +19,13 @@ type Notification struct {
 	Body      string
 	Type      string
 	ActionURL string
-	ReadAt    *time.Time
-	CreatedAt time.Time
+	// ResourceType and ResourceID reference the resource a follow item is about
+	// (FOLLOWS.md). They are the owning module's opaque strings and are set
+	// together or not at all; an ordinary notification leaves both empty.
+	ResourceType string
+	ResourceID   string
+	ReadAt       *time.Time
+	CreatedAt    time.Time
 }
 
 // CreateNotificationInput separates delivery policy from presentation.
@@ -32,6 +37,10 @@ type CreateNotificationInput struct {
 	Type      string
 	ActionURL string
 	Category  NotificationCategory
+	// ResourceType and ResourceID mark the item as being about one resource
+	// instance, which is what a read-time visibility recheck filters on.
+	ResourceType string
+	ResourceID   string
 	// IdempotencyKey makes retries of the same delivery command converge on one
 	// row. Empty keys create a fresh notification.
 	IdempotencyKey string
@@ -98,13 +107,15 @@ func (s *Service) createNotificationWithSettings(
 		).String()
 	}
 	notification := &Notification{
-		ID:        notificationID,
-		UserID:    input.UserID,
-		OrgID:     input.OrgID,
-		Title:     input.Title,
-		Body:      input.Body,
-		Type:      input.Type,
-		ActionURL: input.ActionURL,
+		ID:           notificationID,
+		UserID:       input.UserID,
+		OrgID:        input.OrgID,
+		Title:        input.Title,
+		Body:         input.Body,
+		Type:         input.Type,
+		ActionURL:    input.ActionURL,
+		ResourceType: input.ResourceType,
+		ResourceID:   input.ResourceID,
 	}
 	if err := s.store.CreateNotification(ctx, notification); err != nil {
 		return nil, err

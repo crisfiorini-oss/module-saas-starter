@@ -11,16 +11,19 @@ import (
 func (s *PostgresStore) CreateNotification(ctx context.Context, n *business.Notification) error {
 	q := s.getQueryExecutor(ctx)
 	result, err := q.Exec(ctx, `
-		INSERT INTO notifications (id, user_id, org_id, title, body, type, action_url)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO notifications (id, user_id, org_id, title, body, type, action_url, resource_type, resource_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id
 		WHERE notifications.user_id = EXCLUDED.user_id
 		  AND notifications.org_id IS NOT DISTINCT FROM EXCLUDED.org_id
 		  AND notifications.title = EXCLUDED.title
 		  AND notifications.body = EXCLUDED.body
 		  AND notifications.type = EXCLUDED.type
-		  AND notifications.action_url IS NOT DISTINCT FROM EXCLUDED.action_url`,
-		n.ID, n.UserID, nilIfEmpty(n.OrgID), n.Title, n.Body, n.Type, nilIfEmpty(n.ActionURL))
+		  AND notifications.action_url IS NOT DISTINCT FROM EXCLUDED.action_url
+		  AND notifications.resource_type IS NOT DISTINCT FROM EXCLUDED.resource_type
+		  AND notifications.resource_id IS NOT DISTINCT FROM EXCLUDED.resource_id`,
+		n.ID, n.UserID, nilIfEmpty(n.OrgID), n.Title, n.Body, n.Type, nilIfEmpty(n.ActionURL),
+		nilIfEmpty(n.ResourceType), nilIfEmpty(n.ResourceID))
 	if err != nil {
 		return err
 	}
@@ -34,7 +37,7 @@ func (s *PostgresStore) ListNotifications(ctx context.Context, userID string, pa
 	q := s.getQueryExecutor(ctx)
 
 	query := `
-		SELECT id, user_id, org_id, title, body, type, action_url, read_at, created_at
+		SELECT id, user_id, org_id, title, body, type, action_url, resource_type, resource_id, read_at, created_at
 		FROM notifications
 		WHERE user_id = $1`
 	args := []any{userID}
@@ -58,11 +61,11 @@ func (s *PostgresStore) ListNotifications(ctx context.Context, userID string, pa
 	var notifications []*business.Notification
 	for rows.Next() {
 		var n business.Notification
-		var orgID, actionURL *string
+		var orgID, actionURL, resourceType, resourceID *string
 		var readAt *time.Time
 
 		err := rows.Scan(&n.ID, &n.UserID, &orgID, &n.Title, &n.Body, &n.Type,
-			&actionURL, &readAt, &n.CreatedAt)
+			&actionURL, &resourceType, &resourceID, &readAt, &n.CreatedAt)
 		if err != nil {
 			return nil, "", err
 		}
@@ -71,6 +74,12 @@ func (s *PostgresStore) ListNotifications(ctx context.Context, userID string, pa
 		}
 		if actionURL != nil {
 			n.ActionURL = *actionURL
+		}
+		if resourceType != nil {
+			n.ResourceType = *resourceType
+		}
+		if resourceID != nil {
+			n.ResourceID = *resourceID
 		}
 		n.ReadAt = readAt
 		notifications = append(notifications, &n)
