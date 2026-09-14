@@ -6,7 +6,7 @@
 -- cache that outlives the grant, so they can never be that filter themselves.
 --
 -- Both columns are the owning module's own opaque strings, the same vocabulary
--- resource_follows (migration 140) and CheckAccess already speak. The host never
+-- resource_follows (migration 142) and CheckAccess already speak. The host never
 -- joins on them and never interprets them.
 ALTER TABLE public.notifications
     ADD COLUMN resource_type TEXT,
