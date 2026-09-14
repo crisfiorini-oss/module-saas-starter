@@ -116,7 +116,7 @@ func TestListResourceFollowersSpansUsersAndExcludesRevoked(t *testing.T) {
 	follow(t, second, orgID, "doc", "doc-1")
 	follow(t, third, orgID, "doc", "doc-2")
 	require.NoError(t, testStore.WithUserTx(testCtx, second, func(ctx context.Context) error {
-		return testStore.RevokeResourceFollow(ctx, orgID, second, "doc", "doc-1")
+		return testStore.RevokeResourceFollow(ctx, second, "doc", "doc-1")
 	}))
 
 	var followers []string
@@ -148,7 +148,7 @@ func TestResourceFollowIsLiveTracksRevocation(t *testing.T) {
 
 	require.True(t, live())
 	require.NoError(t, testStore.WithUserTx(testCtx, userID, func(ctx context.Context) error {
-		return testStore.RevokeResourceFollow(ctx, orgID, userID, "doc", "doc-1")
+		return testStore.RevokeResourceFollow(ctx, userID, "doc", "doc-1")
 	}))
 	require.False(t, live())
 	require.False(t, func() bool {
