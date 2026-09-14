@@ -103,6 +103,39 @@ func (s *PostgresStore) GetUnreadCount(ctx context.Context, userID string) (int,
 	return count, err
 }
 
+// ListUnreadResourceReferences groups the user's unread follow items by the
+// resource they refer to. The caller settles visibility per resource and
+// subtracts what is no longer readable, so the badge costs one grouped read
+// rather than one row per unread item.
+//
+// org_id is nullable and descriptive; a row carrying none is still returned, and
+// the caller fails it closed rather than guessing a tenant for it.
+func (s *PostgresStore) ListUnreadResourceReferences(ctx context.Context, userID string) ([]business.UnreadResourceReference, error) {
+	rows, err := s.getQueryExecutor(ctx).Query(ctx, `
+		SELECT org_id, resource_type, resource_id, COUNT(*)
+		FROM notifications
+		WHERE user_id = $1 AND read_at IS NULL AND resource_type IS NOT NULL
+		GROUP BY org_id, resource_type, resource_id`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []business.UnreadResourceReference
+	for rows.Next() {
+		var ref business.UnreadResourceReference
+		var orgID *string
+		if err := rows.Scan(&orgID, &ref.ResourceType, &ref.ResourceID, &ref.Unread); err != nil {
+			return nil, err
+		}
+		if orgID != nil {
+			ref.OrgID = *orgID
+		}
+		out = append(out, ref)
+	}
+	return out, rows.Err()
+}
+
 func (s *PostgresStore) MarkNotificationRead(ctx context.Context, id string) error {
 	q := s.getQueryExecutor(ctx)
 	_, err := q.Exec(ctx, `

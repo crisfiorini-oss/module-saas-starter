@@ -136,7 +136,7 @@ func (s *PostgresStore) CheckAccess(ctx context.Context, subjectID string, subje
 	return true, "granted via " + via, nil
 }
 
-func accessibleScopesQuery(subjectKind gen.SubjectKind, nodePredicate string) (string, error) {
+func accessibleScopesQuery(subjectKind gen.SubjectKind, projection, nodePredicate string) (string, error) {
 	scopePred, err := layeredSubjectPredicate(subjectKind, "g")
 	if err != nil {
 		return "", err
@@ -147,18 +147,23 @@ func accessibleScopesQuery(subjectKind gen.SubjectKind, nodePredicate string) (s
 	}
 
 	// $1 subject, $2 resource_type, $3 action, $4 org; the caller binds
-	// $5 to a node or cursor and, for listing, $6 to the limit. scope_path is UNIQUE per org, so it is a total keyset cursor.
+	// $5 to a node, cursor or candidate set and, for listing, $6 to the limit. scope_path is UNIQUE per org, so it is a total keyset cursor.
 	// UNION dedupes a node reachable through both a grant and a share. The share
 	// branch's ancestor join is on the placed-record identity, so only nodes of the
 	// queried resource_type appear there — structural nodes (NULL resource columns)
-	// never match. The explicit org_id predicate is a second gate on top of the RLS
+	// never match. The GRANT branch carries no such restriction: a grant at an
+	// ancestor reaches every node in its subtree whatever that node's
+	// resource_type, and rp.resource gates the PERMISSION rather than the node — so
+	// a caller matching on resource_id must pin n.resource_type in its own
+	// predicate or a same-id record of another type can answer for it.
+	// The explicit org_id predicate is a second gate on top of the RLS
 	// floor, not RLS alone: it pins the RETURNED node (n.org_id) as well as the
 	// authorizing grant/share (g.org_id / sh.org_id), so an ltree ancestor match or
 	// a colliding (resource_type, resource_id) across tenants can never surface
 	// another org's node even if the RLS floor is ever bypassed.
 	return `
-		SELECT node_id, scope_path, kind, label FROM (
-			SELECT n.id::text AS node_id, n.scope_path::text AS scope_path, n.kind AS kind, n.label AS label, n.scope_path AS path
+		SELECT ` + projection + ` FROM (
+			SELECT n.id::text AS node_id, n.scope_path::text AS scope_path, n.kind AS kind, n.label AS label, n.resource_id AS resource_id, n.scope_path AS path
 			FROM scope_nodes n
 			JOIN scope_grants g ON g.scope_path @> n.scope_path
 			JOIN role_permissions rp ON rp.role_id = g.role_id
@@ -170,7 +175,7 @@ func accessibleScopesQuery(subjectKind gen.SubjectKind, nodePredicate string) (s
 			  AND (rp.action   = '*' OR rp.action   = $3)
 			  AND ` + nodePredicate + `
 			UNION
-			SELECT n.id::text AS node_id, n.scope_path::text AS scope_path, n.kind AS kind, n.label AS label, n.scope_path AS path
+			SELECT n.id::text AS node_id, n.scope_path::text AS scope_path, n.kind AS kind, n.label AS label, n.resource_id AS resource_id, n.scope_path AS path
 			FROM scope_nodes n
 			JOIN record_shares sh ON sh.resource_type = n.resource_type AND sh.resource_id = n.resource_id
 			JOIN role_permissions rp ON rp.role_id = sh.role_id
@@ -205,7 +210,7 @@ func (s *PostgresStore) CanReadScopeNode(ctx context.Context, orgID, subjectID s
 	if parsed, err := uuid.Parse(nodeID); err == nil {
 		node = parsed.String()
 	}
-	query, err := accessibleScopesQuery(subjectKind, "n.id::text = $5")
+	query, err := accessibleScopesQuery(subjectKind, "node_id", "n.id::text = $5")
 	if err != nil {
 		return false, err
 	}
@@ -230,7 +235,7 @@ func (s *PostgresStore) ListAccessibleScopes(ctx context.Context, orgID, subject
 	w := wool.Get(ctx).In("ListAccessibleScopes")
 	executor := s.getQueryExecutor(ctx)
 
-	query, err := accessibleScopesQuery(subjectKind, "($5::ltree IS NULL OR n.scope_path > $5::ltree)")
+	query, err := accessibleScopesQuery(subjectKind, "node_id, scope_path, kind, label", "($5::ltree IS NULL OR n.scope_path > $5::ltree)")
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +261,51 @@ func (s *PostgresStore) ListAccessibleScopes(ctx context.Context, orgID, subject
 	}
 	if err := rows.Err(); err != nil {
 		return nil, w.Wrapf(err, "iterating accessible scope rows")
+	}
+	return out, nil
+}
+
+// ListAccessibleResourceIDs narrows candidates to the placed records the subject
+// may currently act on with (resourceType, action). It resolves through the same
+// grant + share union as ListAccessibleScopes and CheckAccess, so a record is
+// reported visible here exactly when its node is listed and CheckAccess allows
+// it — the three can never disagree.
+//
+// Bounded by the caller's candidate set rather than by a page cursor: a reader
+// already holding the ids it needs a verdict on settles them in one round trip,
+// without enumerating the whole subtree a broad ancestor grant reaches.
+//
+// Runs inside WithOrgTx: RLS confines every table to the caller's tenant.
+func (s *PostgresStore) ListAccessibleResourceIDs(ctx context.Context, orgID, subjectID string, subjectKind gen.SubjectKind, resourceType, action string, candidates []string) ([]string, error) {
+	w := wool.Get(ctx).In("ListAccessibleResourceIDs")
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	// resource_type is pinned alongside resource_id: the grant branch admits any
+	// node beneath an entitled ancestor, so an opaque module-chosen id matched on
+	// its own would let a same-id record of another type answer for this one.
+	query, err := accessibleScopesQuery(subjectKind, "resource_id", "n.resource_type = $2 AND n.resource_id = ANY($5)")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := s.getQueryExecutor(ctx).Query(ctx, query, subjectID, resourceType, action, orgID, candidates)
+	if err != nil {
+		return nil, w.Wrapf(err, "failed to list accessible resource ids")
+	}
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, w.Wrapf(err, "failed to scan accessible resource id")
+		}
+		out = append(out, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, w.Wrapf(err, "iterating accessible resource id rows")
 	}
 	return out, nil
 }

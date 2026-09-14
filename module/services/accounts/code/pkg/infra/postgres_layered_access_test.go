@@ -127,6 +127,59 @@ func TestCheckAccess_ResolvesRecordScopeFromResourceIDNotCaller(t *testing.T) {
 		"an unplaced record has no resolvable scope and must fail closed on the scope branch")
 }
 
+// ListAccessibleResourceIDs narrows a candidate set to what the subject may
+// still read, and pins the resource_type while doing it. The role here permits
+// every resource ('*'), so nothing but that pin keeps a same-id record of
+// another type from answering: the grant branch admits every node beneath an
+// entitled ancestor regardless of the node's own type.
+func TestListAccessibleResourceIDs_NarrowsCandidatesAndPinsResourceType(t *testing.T) {
+	orgID, principalID, roleID := layeredFixture(t, "*", "read")
+
+	registerNode(t, orgID, "root", "root", "", "")
+	registerNode(t, orgID, "root.doc_kept", "record", "doc", "kept")
+	registerNode(t, orgID, "root.doc_gone", "record", "doc", "gone")
+	// Shares an opaque id with nothing of type doc — only a note carries it.
+	registerNode(t, orgID, "root.note", "record", "note", "note_only")
+
+	require.NoError(t, testStore.WithOrgTx(testCtx, orgID, func(ctx context.Context) error {
+		return testStore.GrantScope(ctx, &gen.ScopeGrant{
+			Id: business.NewIDString(), OrgId: orgID, SubjectId: principalID,
+			SubjectKind: gen.SubjectKind_SUBJECT_KIND_PRINCIPAL, ScopePath: "root",
+			RoleId: roleID, GrantedBy: principalID,
+		})
+	}))
+
+	accessible := func(resourceType string, candidates ...string) []string {
+		var out []string
+		require.NoError(t, testStore.WithOrgTx(testCtx, orgID, func(ctx context.Context) error {
+			var err error
+			out, err = testStore.ListAccessibleResourceIDs(ctx, orgID, principalID,
+				gen.SubjectKind_SUBJECT_KIND_PRINCIPAL, resourceType, "read", candidates)
+			return err
+		}))
+		return out
+	}
+
+	require.ElementsMatch(t, []string{"kept", "gone"}, accessible("doc", "kept", "gone"),
+		"both placed records under the grant are readable")
+	require.Empty(t, accessible("doc", "absent"),
+		"an id with no placed record resolves to no scope and stays invisible")
+	require.Empty(t, accessible("doc"),
+		"an empty candidate set asks nothing and reports nothing")
+	require.Empty(t, accessible("doc", "note_only"),
+		"a note must not answer for a doc merely by sharing its id")
+	require.Equal(t, []string{"note_only"}, accessible("note", "note_only"),
+		"asked about its own type, the note is readable")
+
+	// The verdict tracks the grant: revoking it hides the records again, which is
+	// the revocation an inbox read has to notice.
+	require.NoError(t, testStore.WithOrgTx(testCtx, orgID, func(ctx context.Context) error {
+		return testStore.RevokeScope(ctx, orgID, principalID, gen.SubjectKind_SUBJECT_KIND_PRINCIPAL, "root", roleID)
+	}))
+	require.Empty(t, accessible("doc", "kept", "gone"),
+		"a revoked grant leaves no readable record behind")
+}
+
 // A direct record share grants access to exactly that record, independent of the
 // scope hierarchy, and only for that record.
 func TestCheckAccess_PerRecordShare(t *testing.T) {
