@@ -501,6 +501,11 @@ type Store interface {
 	// user's WithUserTx for the actual mutation. Returns "" on miss.
 	GetNotificationUserID(ctx context.Context, id string) (string, error)
 
+	// Resource follows. Both run under the follower's WithUserTx, so the RLS
+	// policy on resource_follows confines them to that user's own rows.
+	CreateResourceFollow(ctx context.Context, follow *ResourceFollow) error
+	RevokeResourceFollow(ctx context.Context, userID, resourceType, resourceID string) error
+
 	// MFA — exposed on the main Store interface so the auth layer's
 	// requireMFA gate can check enrollment without casting to MFAStore.
 	HasVerifiedMFA(ctx context.Context, userID string) (bool, error)

@@ -39,6 +39,8 @@ services:
   PrincipalService:
     kind: plugin
     plugin: permissions
+  ResourceFollowService:
+    kind: generated
   SSOAdminService:
     kind: generated
   TeamService:

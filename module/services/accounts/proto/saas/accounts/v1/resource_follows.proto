@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package saas.accounts.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "saas/policy/v1/options.proto";
+
+// ============================================================================
+// Resource follows
+// ============================================================================
+//
+// A resource follow is one person's durable intent to be told when one specific
+// resource instance changes (module/FOLLOWS.md). resource_type and resource_id
+// are opaque module-owned strings: the host matches on them but never decodes
+// them, so two unrelated owning modules reuse this surface unchanged.
+
+// FollowResourceRequest deliberately carries no subject field. The follower is
+// always the authenticated caller, so the RPC can never be turned into an oracle
+// about another principal — the same reason ListMyAccessibleScopesRequest omits
+// one. A target the caller cannot currently see is reported as missing, never as
+// denied, so Follow cannot be used to probe for resources that exist elsewhere.
+message FollowResourceRequest {
+  string resource_type = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+  string resource_id = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 512
+  }];
+}
+
+message FollowResourceResponse {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+message UnfollowResourceRequest {
+  string resource_type = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 128
+  }];
+  string resource_id = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 512
+  }];
+}
+
+// ResourceFollowService — caller-scoped follow intent over an owner's resource.
+service ResourceFollowService {
+  rpc Follow(FollowResourceRequest) returns (FollowResourceResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_ORG_MEMBER
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {emission: AUDIT_EMISSION_NONE}
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
+      request_sensitivity: SENSITIVITY_CONFIDENTIAL
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+    option (google.api.http) = {
+      post: "/v1/resource-follows"
+      body: "*"
+    };
+  }
+  rpc Unfollow(UnfollowResourceRequest) returns (google.protobuf.Empty) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_ORG_MEMBER
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {emission: AUDIT_EMISSION_NONE}
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_WRITE
+      request_sensitivity: SENSITIVITY_CONFIDENTIAL
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
+    option (google.api.http) = {
+      post: "/v1/resource-follows:unfollow"
+      body: "*"
+    };
+  }
+}

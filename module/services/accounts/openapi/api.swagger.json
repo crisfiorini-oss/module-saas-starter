@@ -1313,6 +1313,26 @@
       },
       "type": "object"
     },
+    "v1FollowResourceRequest": {
+      "description": "FollowResourceRequest deliberately carries no subject field. The follower is\nalways the authenticated caller, so the RPC can never be turned into an oracle\nabout another principal — the same reason ListMyAccessibleScopesRequest omits\none. A target the caller cannot currently see is reported as missing, never as\ndenied, so Follow cannot be used to probe for resources that exist elsewhere.",
+      "properties": {
+        "resourceId": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "v1FollowResourceResponse": {
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "v1GDPRRequest": {
       "properties": {
         "completedAt": {
@@ -4188,6 +4208,17 @@
         "THEME_PREFERENCE_DARK"
       ],
       "type": "string"
+    },
+    "v1UnfollowResourceRequest": {
+      "properties": {
+        "resourceId": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
     },
     "v1UpdateConsentPreferencesRequest": {
       "properties": {
@@ -8560,6 +8591,72 @@
         ]
       }
     },
+    "/v1/resource-follows": {
+      "post": {
+        "operationId": "ResourceFollowService_Follow",
+        "parameters": [
+          {
+            "description": "FollowResourceRequest deliberately carries no subject field. The follower is\nalways the authenticated caller, so the RPC can never be turned into an oracle\nabout another principal — the same reason ListMyAccessibleScopesRequest omits\none. A target the caller cannot currently see is reported as missing, never as\ndenied, so Follow cannot be used to probe for resources that exist elsewhere.",
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1FollowResourceRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1FollowResourceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "ResourceFollowService"
+        ]
+      }
+    },
+    "/v1/resource-follows:unfollow": {
+      "post": {
+        "operationId": "ResourceFollowService_Unfollow",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UnfollowResourceRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {},
+              "type": "object"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "ResourceFollowService"
+        ]
+      }
+    },
     "/v1/role-assignments": {
       "delete": {
         "operationId": "PermissionService_RevokeRole",
@@ -10191,6 +10288,9 @@
     },
     {
       "name": "GDPRService"
+    },
+    {
+      "name": "ResourceFollowService"
     },
     {
       "name": "SolutionRegistryService"

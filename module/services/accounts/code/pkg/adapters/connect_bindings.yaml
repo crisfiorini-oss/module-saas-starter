@@ -103,6 +103,10 @@ services:
     source:
       kind: singleton
       name: PrincipalSingleton
+  ResourceFollowService:
+    handler: resourceFollowConnectHandler
+    source:
+      kind: business
   SSOAdminService:
     handler: ssoAdminConnectHandler
     source:

@@ -128,6 +128,8 @@ func generatedCatalogRESTRoutes() []*RouteEntry {
 		{Service: "accounts", Method: "POST", Path: "/v1/principals/{id}:revoke", Procedure: "/saas.accounts.v1.PrincipalService/RevokePrincipal"},
 		{Service: "accounts", Method: "POST", Path: "/v1/principals:agent", Procedure: "/saas.accounts.v1.PrincipalService/CreateAgentPrincipal"},
 		{Service: "accounts", Method: "POST", Path: "/v1/record-shares", Procedure: "/saas.accounts.v1.PermissionService/ShareRecord"},
+		{Service: "accounts", Method: "POST", Path: "/v1/resource-follows", Procedure: "/saas.accounts.v1.ResourceFollowService/Follow"},
+		{Service: "accounts", Method: "POST", Path: "/v1/resource-follows:unfollow", Procedure: "/saas.accounts.v1.ResourceFollowService/Unfollow"},
 		{Service: "accounts", Method: "POST", Path: "/v1/role-assignments", Procedure: "/saas.accounts.v1.PermissionService/AssignRole"},
 		{Service: "accounts", Method: "POST", Path: "/v1/roles", Procedure: "/saas.accounts.v1.PermissionService/CreateRole"},
 		{Service: "accounts", Method: "POST", Path: "/v1/scope-grants", Procedure: "/saas.accounts.v1.PermissionService/GrantScope"},

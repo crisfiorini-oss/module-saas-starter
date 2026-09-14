@@ -22,6 +22,7 @@ import { OnboardingService } from "./onboarding_pb";
 import { OrganizationService } from "./organizations_pb";
 import { PlatformAdminService } from "./platform_admin_pb";
 import { GDPRService } from "./privacy_pb";
+import { ResourceFollowService } from "./resource_follows_pb";
 import { SolutionRegistryService } from "./solution_registry_service_pb";
 import { SSOAdminService } from "./sso_pb";
 import { TeamService } from "./teams_pb";
@@ -187,6 +188,7 @@ export const ACCOUNT_SERVICE_DESCRIPTORS = {
   PermissionService,
   PlatformAdminService,
   PrincipalService,
+  ResourceFollowService,
   SSOAdminService,
   SolutionRegistryService,
   TeamService,
@@ -223,6 +225,7 @@ export interface AccountsClients {
   readonly PermissionService: Client<typeof PermissionService>;
   readonly PlatformAdminService: Client<typeof PlatformAdminService>;
   readonly PrincipalService: Client<typeof PrincipalService>;
+  readonly ResourceFollowService: Client<typeof ResourceFollowService>;
   readonly SSOAdminService: Client<typeof SSOAdminService>;
   readonly SolutionRegistryService: Client<typeof SolutionRegistryService>;
   readonly TeamService: Client<typeof TeamService>;
@@ -258,6 +261,7 @@ export function createAccountsClients(transport: Transport): AccountsClients {
     PermissionService: createClient(PermissionService, transport),
     PlatformAdminService: createClient(PlatformAdminService, transport),
     PrincipalService: createClient(PrincipalService, transport),
+    ResourceFollowService: createClient(ResourceFollowService, transport),
     SSOAdminService: createClient(SSOAdminService, transport),
     SolutionRegistryService: createClient(SolutionRegistryService, transport),
     TeamService: createClient(TeamService, transport),

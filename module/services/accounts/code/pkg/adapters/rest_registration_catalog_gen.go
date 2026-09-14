@@ -61,6 +61,9 @@ func registerCatalogRESTHandlers(ctx context.Context, mux *runtime.ServeMux, end
 	if err := gen.RegisterPlatformAdminServiceHandlerFromEndpoint(ctx, mux, endpoint, options); err != nil {
 		return fmt.Errorf("register generated REST service PlatformAdminService: %w", err)
 	}
+	if err := gen.RegisterResourceFollowServiceHandlerFromEndpoint(ctx, mux, endpoint, options); err != nil {
+		return fmt.Errorf("register generated REST service ResourceFollowService: %w", err)
+	}
 	if err := gen.RegisterSSOAdminServiceHandlerFromEndpoint(ctx, mux, endpoint, options); err != nil {
 		return fmt.Errorf("register generated REST service SSOAdminService: %w", err)
 	}
@@ -172,6 +175,8 @@ var catalogRESTExactRoutes = map[string]struct{}{
 	"POST /v1/platform/admins":                 {},
 	"POST /v1/principals:agent":                {},
 	"POST /v1/record-shares":                   {},
+	"POST /v1/resource-follows":                {},
+	"POST /v1/resource-follows:unfollow":       {},
 	"POST /v1/role-assignments":                {},
 	"POST /v1/roles":                           {},
 	"POST /v1/scope-grants":                    {},

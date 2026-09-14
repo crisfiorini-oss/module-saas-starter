@@ -107,6 +107,7 @@ var appTenantRelationPrivileges = map[string]relationPrivileges{
 	"mfa_login_transactions": {insertRows: true},
 	"notifications":          {selectRows: true, insertRows: true, updateRows: true, deleteRows: true},
 	"onboarding_progress":    {selectRows: true, insertRows: true, updateRows: true},
+	"resource_follows":       {selectRows: true, insertRows: true, updateRows: true},
 	"sessions":               {selectRows: true, insertRows: true, updateRows: true},
 	"user_consent_events":    {selectRows: true, insertRows: true},
 	"user_consent_preferences": {

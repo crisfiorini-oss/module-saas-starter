@@ -75,6 +75,9 @@
       "name": "GDPRService"
     },
     {
+      "name": "ResourceFollowService"
+    },
+    {
       "name": "SolutionRegistryService"
     },
     {
@@ -3897,6 +3900,72 @@
         ]
       }
     },
+    "/v1/resource-follows": {
+      "post": {
+        "operationId": "ResourceFollowService_Follow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1FollowResourceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "FollowResourceRequest deliberately carries no subject field. The follower is\nalways the authenticated caller, so the RPC can never be turned into an oracle\nabout another principal — the same reason ListMyAccessibleScopesRequest omits\none. A target the caller cannot currently see is reported as missing, never as\ndenied, so Follow cannot be used to probe for resources that exist elsewhere.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1FollowResourceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ResourceFollowService"
+        ]
+      }
+    },
+    "/v1/resource-follows:unfollow": {
+      "post": {
+        "operationId": "ResourceFollowService_Unfollow",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1UnfollowResourceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ResourceFollowService"
+        ]
+      }
+    },
     "/v1/role-assignments": {
       "get": {
         "operationId": "PermissionService_ListRoleAssignments",
@@ -6812,6 +6881,26 @@
         }
       }
     },
+    "v1FollowResourceRequest": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        }
+      },
+      "description": "FollowResourceRequest deliberately carries no subject field. The follower is\nalways the authenticated caller, so the RPC can never be turned into an oracle\nabout another principal — the same reason ListMyAccessibleScopesRequest omits\none. A target the caller cannot currently see is reported as missing, never as\ndenied, so Follow cannot be used to probe for resources that exist elsewhere."
+    },
+    "v1FollowResourceResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
     "v1GDPRRequest": {
       "type": "object",
       "properties": {
@@ -9687,6 +9776,17 @@
         "THEME_PREFERENCE_DARK"
       ],
       "default": "THEME_PREFERENCE_UNSPECIFIED"
+    },
+    "v1UnfollowResourceRequest": {
+      "type": "object",
+      "properties": {
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceId": {
+          "type": "string"
+        }
+      }
     },
     "v1UpdateConsentPreferencesRequest": {
       "type": "object",

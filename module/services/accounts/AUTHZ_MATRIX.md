@@ -2,7 +2,7 @@
 
 > Generated from protobuf service descriptors and `saas.policy.v1.method_policy`; only the prose description is joined from `pkg/business/introspection.go`. Do not edit by hand. Run `go generate ./pkg/business` from `module/services/accounts/code`.
 
-Inventory: **198 RPCs** across **31 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
+Inventory: **200 RPCs** across **32 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
 
 The compact tier is retained for compatibility. Guards, resource bindings, audit events, limiter class, and data sensitivity are descriptor-authoritative. Domain handlers may enforce stronger state-dependent rules but may not weaken this floor.
 
@@ -154,6 +154,8 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 | `/saas.accounts.v1.PrincipalService/GetPrincipal` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Internal principal lookup. |
 | `/saas.accounts.v1.PrincipalService/ListPrincipals` | unary | `GET /v1/principals` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | org_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | List principals in an organization. |
 | `/saas.accounts.v1.PrincipalService/RevokePrincipal` | unary | `POST /v1/principals/{id}:revoke` | `auth` | exposure=AUTHENTICATED; tenant=USER | — | id → OWNED_RESOURCE/RESOURCE_TO_ORGANIZATION | SUCCESS: saas.principal.revoked | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Revoke an organization or platform principal. |
+| `/saas.accounts.v1.ResourceFollowService/Follow` | unary | `POST /v1/resource-follows` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | — | — | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Follow one resource instance the caller can see, to be told when it changes. |
+| `/saas.accounts.v1.ResourceFollowService/Unfollow` | unary | `POST /v1/resource-follows:unfollow` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | — | — | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Stop following one resource instance the caller follows. |
 | `/saas.accounts.v1.SSOAdminService/Disable` | unary | `POST /v1/sso/disable` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.sso.disabled | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Pause SSO; preserves WorkOS state for re-enable. |
 | `/saas.accounts.v1.SSOAdminService/GetSSO` | unary | `GET /v1/sso/{org_id}` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | Read org SSO state. |
 | `/saas.accounts.v1.SSOAdminService/StartSetup` | unary | `POST /v1/sso/setup` | `org_admin` | exposure=AUTHENTICATED; tenant=ORG_ADMIN | — | org_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.sso.setup.started | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Mint WorkOS portal link. |
@@ -213,6 +215,6 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 - `internal`: 38
 - `mfa`: 3
 - `org_admin`: 41
-- `org_member`: 37
+- `org_member`: 39
 - `platform_admin`: 24
 - `public`: 16

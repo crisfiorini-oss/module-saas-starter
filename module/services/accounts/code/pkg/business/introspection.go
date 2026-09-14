@@ -219,6 +219,8 @@ var rpcDescriptions = withWorkContextConsumerDescriptions(map[string]string{
 	"PrincipalService/GetPrincipal":                           "Internal principal lookup.",
 	"PrincipalService/ListPrincipals":                         "List principals in an organization.",
 	"PrincipalService/RevokePrincipal":                        "Revoke an organization or platform principal.",
+	"ResourceFollowService/Follow":                            "Follow one resource instance the caller can see, to be told when it changes.",
+	"ResourceFollowService/Unfollow":                          "Stop following one resource instance the caller follows.",
 	"SSOAdminService/Disable":                                 "Pause SSO; preserves WorkOS state for re-enable.",
 	"SSOAdminService/GetSSO":                                  "Read org SSO state.",
 	"SSOAdminService/StartSetup":                              "Mint WorkOS portal link.",

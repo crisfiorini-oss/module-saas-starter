@@ -930,6 +930,46 @@ func (h *notificationConnectHandler) DeleteNotification(ctx context.Context, req
 }
 
 // ============================================================================
+// ResourceFollowService — backed by business.Service.
+// Caller identity comes from auth headers; neither request carries a subject.
+// ============================================================================
+
+type resourceFollowConnectHandler struct{ svc *business.Service }
+
+func (h *resourceFollowConnectHandler) Follow(ctx context.Context, req *connect.Request[gen.FollowResourceRequest]) (*connect.Response[gen.FollowResourceResponse], error) {
+	ctx = connectCtx(ctx, req.Header())
+	userID, err := callerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := callerOrg(ctx)
+	if err := requireOrgMember(ctx, userID, orgID); err != nil {
+		return nil, err
+	}
+	follow, err := h.svc.Follow(ctx, userID, orgID, req.Msg.ResourceType, req.Msg.ResourceId)
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&gen.FollowResourceResponse{Id: follow.ID}), nil
+}
+
+func (h *resourceFollowConnectHandler) Unfollow(ctx context.Context, req *connect.Request[gen.UnfollowResourceRequest]) (*connect.Response[emptypb.Empty], error) {
+	ctx = connectCtx(ctx, req.Header())
+	userID, err := callerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgID := callerOrg(ctx)
+	if err := requireOrgMember(ctx, userID, orgID); err != nil {
+		return nil, err
+	}
+	if err := h.svc.Unfollow(ctx, userID, req.Msg.ResourceType, req.Msg.ResourceId); err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// ============================================================================
 // OnboardingService — backed by business.Service.
 // ============================================================================
 
