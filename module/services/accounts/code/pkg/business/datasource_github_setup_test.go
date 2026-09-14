@@ -231,6 +231,8 @@ func TestAddGitHubSource_ConnectsThroughTheAppWithoutAToken(t *testing.T) {
 	require.NotContains(t, stored, "ghs_", "an installation token must never be stored")
 	require.NotContains(t, stored, "PRIVATE KEY", "the app signing key must never reach a source record")
 	require.NotEmpty(t, h.tokens.last(), "the connect-time validation must have authenticated with a minted token")
+	require.Equal(t, "4242", source.GitHubInstallationID,
+		"an App-backed source must carry the routing index, or an App-level installation delivery cannot resolve it")
 }
 
 // The provider-agnostic call must accept the same connect the GitHub-specific
@@ -252,6 +254,8 @@ func TestAddSource_ConnectsGitHubThroughTheAppWithoutACredential(t *testing.T) {
 	stored := h.storedCredential(t, source.ID)
 	require.Contains(t, stored, `"kind":"app"`)
 	require.Contains(t, stored, `"installation_id":"4242"`)
+	require.Equal(t, "4242", source.GitHubInstallationID,
+		"the provider-agnostic connect must stamp the routing index too")
 }
 
 // Without a verified claim there is nothing authorizing this tenant to use the
@@ -275,4 +279,6 @@ func TestAddGitHubSource_StillAcceptsARepositoryScopedPAT(t *testing.T) {
 	source := h.addPATSource(t, "acme/docs", "pat-1")
 
 	require.Equal(t, "pat-1", h.storedCredential(t, source.ID))
+	require.Empty(t, source.GitHubInstallationID,
+		"a PAT source is bound to no installation, so it must not be routable by one")
 }

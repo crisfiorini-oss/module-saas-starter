@@ -459,7 +459,7 @@ func (s *Service) AddGitHubSource(ctx context.Context, actorID string, input Add
 		return nil, w.NewError("datasource secret cipher is not configured")
 	}
 
-	credentialPlaintext, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, input.AccessToken)
+	credentialPlaintext, installationID, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, input.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -473,6 +473,10 @@ func (s *Service) AddGitHubSource(ctx context.Context, actorID string, input Add
 		Branch:            strings.TrimSpace(input.Branch),
 		Status:            DatasourceStatusActive,
 		ReconcileInterval: defaultDatasourceReconcileInterval,
+		// Written with the row rather than after it: a source that is App-backed
+		// from birth must be resolvable by installation the moment it exists, or
+		// an App-level delivery cannot reach it. Empty for a PAT source.
+		GitHubInstallationID: installationID,
 	}
 	nextReconcile := time.Now().UTC().Add(defaultDatasourceReconcileInterval)
 	source.NextReconcileAt = &nextReconcile
@@ -580,11 +584,12 @@ func (s *Service) AddSource(ctx context.Context, actorID string, input AddSource
 		// repository-scoped PAT, and none connects through the deployment's App.
 		// Sharing it keeps the provider-agnostic call from refusing a connect the
 		// GitHub-specific one accepts.
-		resolved, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, credential)
+		resolved, installationID, err := s.resolveGitHubConnectCredential(ctx, orgID, repo, input.Branch, credential)
 		if err != nil {
 			return nil, err
 		}
 		credential = resolved
+		source.GitHubInstallationID = installationID
 		source.Repo = repo
 		source.Paths = normalizePaths(input.Paths)
 		source.Branch = strings.TrimSpace(input.Branch)

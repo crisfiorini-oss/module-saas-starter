@@ -319,24 +319,29 @@ func (s *Service) listGitHubAppRepositories(ctx context.Context, orgID, installa
 // the repository server-side rather than taken from the caller — so no client
 // decides which installation backs a tenant's source — and must already be
 // claimed by this organization, which is what the setup round-trip established.
-func (s *Service) resolveGitHubConnectCredential(ctx context.Context, orgID, repo, branch, accessToken string) (string, error) {
+// It returns the plaintext to seal into the envelope and, for an App connect,
+// the installation that backs it — empty for a PAT. The caller stamps that onto
+// the source as the routing index an App-level delivery resolves it through:
+// the envelope is encrypted and cannot be selected on, so a source that is
+// App-backed from birth would otherwise be invisible to installation events.
+func (s *Service) resolveGitHubConnectCredential(ctx context.Context, orgID, repo, branch, accessToken string) (plaintext, installationID string, err error) {
 	if token := strings.TrimSpace(accessToken); token != "" {
 		if err := s.validateGitHubSource(ctx, repo, branch, token); err != nil {
-			return "", err
+			return "", "", err
 		}
-		return token, nil
+		return token, "", nil
 	}
 
 	if !s.GitHubAppConfigured() || s.githubConnector == nil {
-		return "", status.Error(codes.FailedPrecondition,
+		return "", "", status.Error(codes.FailedPrecondition,
 			"No access token was supplied and this deployment has no GitHub App configured. Supply a repository-scoped fine-grained PAT, or ask an operator to register the App.")
 	}
 
 	owner, name, _ := strings.Cut(repo, "/")
-	installationID, err := s.githubConnector.FindRepositoryInstallation(ctx,
+	installationID, err = s.githubConnector.FindRepositoryInstallation(ctx,
 		githubconnector.AppCredential{AppID: s.githubAppID, PrivateKeyPEM: s.githubAppKeyPEM}, owner, name)
 	if err != nil {
-		return "", githubInstallationTokenError(err)
+		return "", "", githubInstallationTokenError(err)
 	}
 
 	var claimed bool
@@ -344,10 +349,10 @@ func (s *Service) resolveGitHubConnectCredential(ctx context.Context, orgID, rep
 		claimed, err = s.store.GitHubAppInstallationClaimedBy(ctx, installationID, orgID)
 		return err
 	}); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if !claimed {
-		return "", status.Error(codes.PermissionDenied,
+		return "", "", status.Error(codes.PermissionDenied,
 			"The GitHub App installation covering that repository is not connected to this organization. Install the App from this organization first, then connect the repository.")
 	}
 
@@ -358,10 +363,14 @@ func (s *Service) resolveGitHubConnectCredential(ctx context.Context, orgID, rep
 	}
 	token, err := s.githubToken(ctx, credential, repo)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := validateGitHubAccess(ctx, s.newGitHubClient(token), repo, branch); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return credential.marshal()
+	blob, err := credential.marshal()
+	if err != nil {
+		return "", "", err
+	}
+	return blob, installationID, nil
 }
