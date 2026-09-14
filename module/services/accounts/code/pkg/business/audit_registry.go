@@ -273,19 +273,21 @@ const (
 	EventWebhookSecretRotated EventType = "saas.webhook.secret_rotated"
 	EventJobReplayed          EventType = "saas.job.replayed"
 
-	EventDatasourceSourceAdded         EventType = "saas.datasource.source.added"
-	EventDatasourceSyncCompleted       EventType = "saas.datasource.sync.completed"
-	EventDatasourceCredentialUpdated   EventType = "saas.datasource.credential.updated"
-	EventDatasourceSyncFailed          EventType = "saas.datasource.sync.failed"
-	EventDatasourceSourceSynced        EventType = "saas.datasource.source.synced"
-	EventDatasourceSourceRemoved       EventType = "saas.datasource.source.removed"
-	EventDatasourceChangeSetCompiled   EventType = "saas.datasource.change_set_compiled"
-	EventDatasourceForcePushReconciled EventType = "saas.datasource.force_push_reconciled"
-	EventDatasourceBranchDeleted       EventType = "saas.datasource.branch_deleted"
-	EventDatasourceSnapshotTooLarge    EventType = "saas.datasource.snapshot_too_large"
-	EventDatasourceSourceRecovered     EventType = "saas.datasource.source.recovered"
-	EventDatasourceBlobFetched         EventType = "saas.datasource.blob_fetched"
-	EventFeatureFlagUpdated            EventType = "saas.feature_flag.updated"
+	EventDatasourceSourceAdded          EventType = "saas.datasource.source.added"
+	EventDatasourceSyncCompleted        EventType = "saas.datasource.sync.completed"
+	EventDatasourceCredentialUpdated    EventType = "saas.datasource.credential.updated"
+	EventDatasourceSyncFailed           EventType = "saas.datasource.sync.failed"
+	EventDatasourceSourceSynced         EventType = "saas.datasource.source.synced"
+	EventDatasourceSourceRemoved        EventType = "saas.datasource.source.removed"
+	EventDatasourceChangeSetCompiled    EventType = "saas.datasource.change_set_compiled"
+	EventDatasourceForcePushReconciled  EventType = "saas.datasource.force_push_reconciled"
+	EventDatasourceBranchDeleted        EventType = "saas.datasource.branch_deleted"
+	EventDatasourceSnapshotTooLarge     EventType = "saas.datasource.snapshot_too_large"
+	EventDatasourceSourceRecovered      EventType = "saas.datasource.source.recovered"
+	EventDatasourceSourceAccessLost     EventType = "saas.datasource.source.access_lost"
+	EventDatasourceSourceAccessRestored EventType = "saas.datasource.source.access_restored"
+	EventDatasourceBlobFetched          EventType = "saas.datasource.blob_fetched"
+	EventFeatureFlagUpdated             EventType = "saas.feature_flag.updated"
 
 	// Domain-event pub/sub (issue #493). A subscription is a standing grant of
 	// delivery, so its create and revoke are audited on the tenant spine; a
@@ -458,6 +460,13 @@ var auditEventCatalog = []AuditEventDefinition{
 		str("head"), PayloadField{Name: "bytes", Kind: FieldInt}, PayloadField{Name: "limit", Kind: FieldInt}, str("delivery_id")),
 	observation(EventDatasourceSourceRecovered, CategorySystem, "A degraded datasource source snapshotted within the ingest limit again and was returned to active.",
 		str("head"), str("delivery_id")),
+	observation(EventDatasourceSourceAccessLost, CategorySystem,
+		"A GitHub App installation stopped granting a source access to its repository; the source was degraded until access returns.",
+		str("repo"), str("installation_id"), enum("reason", DatasourceAccessLostRepositoryUnavailable, DatasourceAccessLostSuspended)),
+	observation(EventDatasourceSourceAccessRestored, CategorySystem,
+		"A GitHub App installation granted a source access to its repository again and the source was returned to active.",
+		str("repo"), str("installation_id"),
+		enum("restored_from", DatasourceAccessLostRepositoryUnavailable, DatasourceAccessLostSuspended)),
 	observation(EventDatasourceBlobFetched, CategorySystem, "A module fetched a datasource blob's bytes over FetchDatasourceBlob.",
 		str("repo"), str("blob_sha"), PayloadField{Name: "bytes", Kind: FieldInt}),
 	revised(mutation(EventWebhookSecretRotated, CategorySystem, "A webhook signing secret was rotated.", webhookAdminFields...), webhookAdminVersion),

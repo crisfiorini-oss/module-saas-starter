@@ -2,7 +2,9 @@ package business
 
 import (
 	"encoding/json"
+	"maps"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -111,4 +113,34 @@ func TestPayloadSchemaJSON_IsValidJSON(t *testing.T) {
 		require.NoError(t, json.Unmarshal(d.PayloadSchemaJSON(), &m), "event %q schema must marshal", d.Type)
 		require.Equal(t, "object", m["type"])
 	}
+}
+
+// The App-installation reason codes are the values consumers filter and
+// aggregate on, and they reach the payload through datasourceInstallationReasons
+// rather than being written at the emit site. A code added to that map without
+// being declared on both events would pass every other gate and then fail
+// ValidatePayload only at runtime, where an audit record is never dropped — so
+// the drift would surface as a warning in a log, not as a failure.
+func TestAuditCatalog_InstallationReasonCodesAreDeclaredOnBothEvents(t *testing.T) {
+	declared := func(event EventType, field string) []string {
+		d, ok := auditEventIndex[event]
+		require.Truef(t, ok, "%q is not registered", event)
+		for _, f := range d.Fields {
+			if f.Name == field {
+				require.Equalf(t, FieldEnum, f.Kind, "%q field %q must be an enum", event, field)
+				return f.Enum
+			}
+		}
+		t.Fatalf("%q declares no field %q", event, field)
+		return nil
+	}
+
+	lost := declared(EventDatasourceSourceAccessLost, "reason")
+	restored := declared(EventDatasourceSourceAccessRestored, "restored_from")
+	require.ElementsMatch(t, lost, restored,
+		"a cause a source can be parked for is a cause it can be restored from; the two enums must agree")
+
+	codes := slices.Sorted(maps.Values(datasourceInstallationReasonCodes))
+	require.ElementsMatch(t, codes, lost,
+		"every code datasourceInstallationReasonCodes can put in a payload must be declared on the event")
 }

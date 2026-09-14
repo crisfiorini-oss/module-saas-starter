@@ -492,7 +492,7 @@ func (s *Service) snapshotAt(ctx context.Context, source *DatasourceSource, clie
 		// full-tree path — clears the flag. The status read is reliable because
 		// the per-source FIFO ordering key makes this the only in-flight delivery.
 		if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
-			return s.store.ClearDatasourceSourceDegraded(ctx, source.ID)
+			return s.store.ClearDatasourceSourceDegraded(ctx, source.ID, datasourceInstallationReasons)
 		}); err != nil {
 			return "", w.Wrapf(err, "clear degraded source")
 		}

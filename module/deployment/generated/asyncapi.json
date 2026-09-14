@@ -372,6 +372,28 @@
       "x-visibility": "external",
       "x-retention": "30d"
     },
+    "saas.datasource.source.access_lost": {
+      "address": "saas.datasource.source.access_lost",
+      "title": "saas.datasource.source.access_lost",
+      "messages": {
+        "envelope": {
+          "$ref": "#/components/messages/saas.datasource.source.access_lost"
+        }
+      },
+      "x-visibility": "external",
+      "x-retention": "30d"
+    },
+    "saas.datasource.source.access_restored": {
+      "address": "saas.datasource.source.access_restored",
+      "title": "saas.datasource.source.access_restored",
+      "messages": {
+        "envelope": {
+          "$ref": "#/components/messages/saas.datasource.source.access_restored"
+        }
+      },
+      "x-visibility": "external",
+      "x-retention": "30d"
+    },
     "saas.datasource.source.added": {
       "address": "saas.datasource.source.added",
       "title": "saas.datasource.source.added",
@@ -1803,6 +1825,20 @@
       },
       "title": "saas publishes saas.datasource.snapshot_too_large"
     },
+    "send:saas.datasource.source.access_lost": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/saas.datasource.source.access_lost"
+      },
+      "title": "saas publishes saas.datasource.source.access_lost"
+    },
+    "send:saas.datasource.source.access_restored": {
+      "action": "send",
+      "channel": {
+        "$ref": "#/channels/saas.datasource.source.access_restored"
+      },
+      "title": "saas publishes saas.datasource.source.access_restored"
+    },
     "send:saas.datasource.source.added": {
       "action": "send",
       "channel": {
@@ -2789,6 +2825,20 @@
       "saas.datasource.snapshot_too_large": {
         "name": "saas.datasource.snapshot_too_large",
         "title": "saas.datasource.snapshot_too_large",
+        "payload": {
+          "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
+        }
+      },
+      "saas.datasource.source.access_lost": {
+        "name": "saas.datasource.source.access_lost",
+        "title": "saas.datasource.source.access_lost",
+        "payload": {
+          "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
+        }
+      },
+      "saas.datasource.source.access_restored": {
+        "name": "saas.datasource.source.access_restored",
+        "title": "saas.datasource.source.access_restored",
         "payload": {
           "$ref": "#/components/schemas/saas_events_v1_events.proto_EventEnvelope"
         }

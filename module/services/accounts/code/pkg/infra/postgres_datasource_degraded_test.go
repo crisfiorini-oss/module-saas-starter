@@ -38,7 +38,10 @@ func TestPostgresDatasourceDegradeRoundTripClearsTheStoredReason(t *testing.T) {
 		"the degrade reason must reach the column the wire projection reads")
 
 	require.NoError(t, testStore.WithControlPlane(testCtx, func(ctx context.Context) error {
-		return testStore.ClearDatasourceSourceDegraded(ctx, sourceID)
+		return testStore.ClearDatasourceSourceDegraded(ctx, sourceID, []string{
+			business.DatasourceReasonInstallationSuspended,
+			business.DatasourceReasonInstallationRepositoryUnavailable,
+		})
 	}))
 
 	revived, err := testStore.GetDatasourceSourceByID(testCtx, sourceID)

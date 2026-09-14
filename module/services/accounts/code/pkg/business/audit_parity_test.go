@@ -34,6 +34,11 @@ var eventsEmittedOutsideRPC = []EventType{
 	EventDatasourceSnapshotTooLarge,
 	EventDatasourceSyncCompleted,
 	EventDatasourceSyncFailed,
+	// The App-level installation reconciler emits these from its leased job:
+	// the transition originates in a third party's GitHub account, not in any
+	// request a tenant made.
+	EventDatasourceSourceAccessLost,
+	EventDatasourceSourceAccessRestored,
 	EventDatasourceSourceRecovered,
 	EventDocumentDeleted,
 	EventDocumentIngested,

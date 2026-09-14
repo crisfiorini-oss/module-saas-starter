@@ -73,13 +73,15 @@ func parseGitHubStoredCredential(plaintext string) githubStoredCredential {
 }
 
 // SetGitHubAppRegistration wires the deployment's GitHub App: the id it is
-// registered under and the RSA private key its installation tokens are signed
-// with. Both are operator-managed deployment configuration, held once here
+// registered under, the RSA private key its installation tokens are signed
+// with, and the secret GitHub signs the App's own lifecycle deliveries with.
+// All three are operator-managed deployment configuration, held once here
 // rather than copied onto each source, and never leave accounts. An empty
 // registration leaves every source on its own stored PAT.
-func (s *Service) SetGitHubAppRegistration(appID, privateKeyPEM string) {
+func (s *Service) SetGitHubAppRegistration(appID, privateKeyPEM, webhookSecret string) {
 	s.githubAppID = strings.TrimSpace(appID)
 	s.githubAppKeyPEM = strings.TrimSpace(privateKeyPEM)
+	s.githubAppWebhookSecret = strings.TrimSpace(webhookSecret)
 }
 
 // GitHubAppConfigured reports whether this deployment can mint installation
@@ -259,7 +261,14 @@ func (s *Service) MigrateGitHubSourceToApp(ctx context.Context, actorID, orgID, 
 		if err := s.store.UpdateDatasourceSourceCredential(ctx, orgID, id, encrypted); err != nil {
 			return w.Wrapf(err, "persist app credential")
 		}
+		// The routing index an App-level delivery resolves this source through,
+		// written in the same transaction as the envelope it indexes so the two
+		// never disagree about which installation this source was bound to.
+		if err := s.store.SetDatasourceSourceGitHubInstallation(ctx, orgID, id, installationID); err != nil {
+			return w.Wrapf(err, "persist installation binding")
+		}
 		source.CredentialSecretRef = encrypted
+		source.GitHubInstallationID = installationID
 		return s.emitTx(ctx, actorID, "user", EventDatasourceCredentialUpdated, "datasource", id, orgID,
 			map[string]any{"repo": source.Repo, "credential_kind": githubCredentialKindApp})
 	}); err != nil {

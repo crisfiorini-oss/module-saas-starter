@@ -103,6 +103,16 @@ test('a failing quality command still fails its matrix job', () => {
   }
 });
 
+test('every buf setup authenticates, so no job resolves a release on the shared anonymous rate limit', () => {
+  const steps = Object.values(workflow.jobs)
+    .flatMap(job => job.steps ?? [])
+    .filter(step => typeof step.uses === 'string' && step.uses.startsWith('bufbuild/buf-setup-action@'));
+  assert.ok(steps.length > 0);
+  for (const step of steps) {
+    assert.equal(step.with?.github_token, '${{ secrets.GITHUB_TOKEN }}');
+  }
+});
+
 test('disk preparation skips unnecessary deletion, stops when sufficient, and fails when exhausted', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ci-disk-'));
   try {

@@ -67,6 +67,7 @@ type Service struct {
 	githubBaseURL             string                     // api.github.com override for the datasource connector
 	githubAppID               string                     // deployment's GitHub App registration; empty leaves sources on their own PAT
 	githubAppKeyPEM           string                     // the App's RSA signing key, deployment custody — never copied onto a source
+	githubAppWebhookSecret    string                     // signs the App's own lifecycle deliveries; App-wide, never per source
 	datasourceTicketSigner    *datasourceTicketSigner    // mints/verifies opaque content tickets for oversized change-set blobs
 	newGitHubClient           func(token string) GitHubContentClient
 	newAPIClient              func(cfg APIDatasourceConfig, credential string) APIContentClient

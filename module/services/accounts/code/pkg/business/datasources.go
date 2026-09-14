@@ -262,7 +262,13 @@ type DatasourceSource struct {
 	BoundaryNodeID      string
 	CredentialSecretRef string
 	WebhookSecretRef    string
-	Status              string
+	// GitHubInstallationID is the App installation this source's credential
+	// envelope binds it to, denormalized so an App-level delivery can resolve the
+	// sources it affects (the envelope is encrypted and cannot be selected on).
+	// It is a routing index only — the envelope stays the sole authority for
+	// minting a token. Empty for a PAT-backed source.
+	GitHubInstallationID string
+	Status               string
 	// StatusReason explains a non-active status (the degrade reason for a source
 	// the compiler parked); empty for an active source.
 	StatusReason string

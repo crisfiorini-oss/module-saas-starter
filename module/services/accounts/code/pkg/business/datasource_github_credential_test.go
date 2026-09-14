@@ -138,7 +138,7 @@ func newAppHarness(t *testing.T, app *fakeGitHubApp) *appHarness {
 	producer := &recordingProducer{}
 	svc, audit := newDatasourceService(store, producer, &fakeGitHub{defaultBranch: "main", commit: "abc"})
 	svc.SetGitHubConnector(githubconnector.NewConnector(githubconnector.WithBaseURL(server.URL)))
-	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t))
+	svc.SetGitHubAppRegistration("123456", testAppKeyPEM(t), "")
 
 	tokens := &githubTokens{}
 	gh := &fakeGitHub{defaultBranch: "main", commit: "abc"}
@@ -263,7 +263,7 @@ func TestMigrateGitHubSourceToApp_KeepsThePATWhenAppAccessIsNotProven(t *testing
 // A source connected before the App lifecycle stored its PAT as bare text.
 func TestGitHubSource_LegacyPATEnvelopeStillAuthenticates(t *testing.T) {
 	h := newAppHarness(t, &fakeGitHubApp{})
-	h.svc.SetGitHubAppRegistration("", "")
+	h.svc.SetGitHubAppRegistration("", "", "")
 	source := h.addPATSource(t, "acme/docs", "pat-old")
 
 	_, err := h.svc.SyncDatasourceSource(context.Background(), "actor-1", testOrg, source.ID)

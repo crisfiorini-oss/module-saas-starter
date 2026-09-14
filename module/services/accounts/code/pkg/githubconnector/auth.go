@@ -27,6 +27,14 @@ type InstallationToken struct {
 	ExpiresAt time.Time
 }
 
+// AppInstallation is one installation's live state as GitHub reports it.
+// SuspendedAt is set while the installation is suspended: it still exists, and
+// every token minted from it is refused until an owner unsuspends it.
+type AppInstallation struct {
+	ID          string
+	SuspendedAt *time.Time
+}
+
 // MintInstallationToken exchanges the App credential for an installation access
 // token: it signs a short-lived app JWT with the app's private key and POSTs to
 // the installation's access-tokens endpoint. The returned token authorizes REST
@@ -100,6 +108,36 @@ func (c *Connector) FindRepositoryInstallation(ctx context.Context, cred AppCred
 		return "", fmt.Errorf("find repository installation: response missing installation id")
 	}
 	return out.ID.String(), nil
+}
+
+// GetInstallation reads one installation's live state, authenticating as the
+// app itself. A delivery says what changed; this says what is true now, which
+// is what the host acts on — a replayed or out-of-order delivery would
+// otherwise revoke access that has since been restored, or leave revoked
+// access in place. A deleted installation answers 404, which IsNotFound
+// classifies. Only AppID and PrivateKeyPEM are read from cred.
+func (c *Connector) GetInstallation(ctx context.Context, cred AppCredential, installationID string) (AppInstallation, error) {
+	appJWT, err := c.appJWT(cred)
+	if err != nil {
+		return AppInstallation{}, err
+	}
+
+	endpoint := fmt.Sprintf("%s/app/installations/%s", c.baseURL, url.PathEscape(installationID))
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return AppInstallation{}, err
+	}
+	req.Header.Set("Authorization", "Bearer "+appJWT)
+	setGitHubHeaders(req)
+
+	var out struct {
+		ID          json.Number `json:"id"`
+		SuspendedAt *time.Time  `json:"suspended_at"`
+	}
+	if err := c.do(req, &out); err != nil {
+		return AppInstallation{}, fmt.Errorf("get installation: %w", err)
+	}
+	return AppInstallation{ID: out.ID.String(), SuspendedAt: out.SuspendedAt}, nil
 }
 
 // scopedMintBody renders the narrowing request GitHub's create-installation-

@@ -246,6 +246,12 @@ def main():
     p.add_argument('--upgrade-package',type=Path)
     args=p.parse_args();containers=[];tests=[];bootstrap_receipts=[]
     head=max(int(p.name.split('_')[0]) for p in (ROOT/'module/services/store/migrations').glob('*.up.sql'))
+    # Rolling back is counted in migrations, never in version numbers. Versions
+    # are deliberately not contiguous — migrations/README.md requires a new
+    # version above the target branch's frontier "including gaps", and parallel
+    # branches hold numbers that land out of order or never land — so a step
+    # count of head-N walks past N the moment any number in between is missing.
+    above=lambda version:sum(1 for f in (ROOT/'module/services/store/migrations').glob('*.up.sql') if int(f.name.split('_')[0])>version)
     if bool(args.fresh_package)!=bool(args.upgrade_package):p.error('both packages required together')
     try:
         canonical=start();containers.append(canonical)
@@ -320,7 +326,7 @@ def main():
             # Down to 135, not down one step: the case is about rolling back the
             # explicit-policies upgrade, and every migration added after it has
             # to come off first for that to be what actually happens.
-            run(migration_command(canonical,'postgres','down',str(head-135)))
+            run(migration_command(canonical,'postgres','down',str(above(135))))
             assert sql(canonical,"SELECT version::text||':'||dirty::text FROM schema_migrations").stdout.strip()=='135:false'
             assert sql(canonical,"SELECT count(*) FROM pg_policy WHERE polname LIKE '%_explicit_rows'").stdout.strip()=='0'
             assert sql(canonical,"SELECT bool_and(NOT has_schema_privilege(rolname,'public','CREATE')) FROM pg_roles WHERE rolname LIKE 'app_%'").stdout.strip()=='t'
@@ -356,8 +362,8 @@ WHERE member.rolname IN ('example_reader','example_writer','example_ro','example
             # Later migrations may legitimately add and remove their own policies.
             # Snapshot the policy inventory at 136, immediately before the guarded
             # downgrade, so its refusal still proves that it removed no policy.
-            if head>136:
-                run(migration_command(fresh,'example_migrator','down',str(head-136)))
+            if above(136):
+                run(migration_command(fresh,'example_migrator','down',str(above(136))))
             assert sql(fresh,"SELECT version::text||':'||dirty::text FROM schema_migrations").stdout.strip()=='136:false'
             policy_before=sql(fresh,'SELECT count(*) FROM pg_policy').stdout
             r=run(migration_command(fresh,'example_migrator','down','1'),check=False)
