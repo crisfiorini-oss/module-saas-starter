@@ -433,7 +433,7 @@
     "services/accounts/code/pkg/business/audit_jobs.go": "641439705d878543f9ae127deb7e10c5e66d34bb643bcccea7ad29db56a7e028",
     "services/accounts/code/pkg/business/audit_jobs_test.go": "582b790f76e9a33f7ed6f40757a7ed5503c849b60143dab96d1132b51463db27",
     "services/accounts/code/pkg/business/audit_parity_test.go": "d8448f4394f9657a64d7f8db73c2125273e0842baa463a9815ddb1fec657dfe6",
-    "services/accounts/code/pkg/business/audit_registry.go": "1b59b7f7d5c9ff5fd62e17098ef7411e311eda854ffdd49b94d91a68cc79fe8c",
+    "services/accounts/code/pkg/business/audit_registry.go": "89d9ebad1072301db48a41e8ff415dedf2f417170be3bc8378f6f7ef208c9446",
     "services/accounts/code/pkg/business/audit_registry_test.go": "f094c1db075b168bed259230191d399db032190f198a52a572d1ce717f420a7a",
     "services/accounts/code/pkg/business/audit_typed_integration_test.go": "27bb65702b647b5af9545f631c129183a484c5c37b95fe5b1d909e4d19bad3e8",
     "services/accounts/code/pkg/business/auth.go": "9ba4cd3a1a43bc1697c4d86f63e76ac4c10a25769a13b0e92b86120cf5817fcc",
