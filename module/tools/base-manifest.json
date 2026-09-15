@@ -1,12 +1,6 @@
 {
   "note": "Base-file integrity manifest for the saas-starter module. Generated FROM canonical by `node tools/base-integrity.mjs gen`. Consumers MUST NOT hand-edit base files — only add files on the side. Regenerated on every codefly sync from canonical.",
-<<<<<<< HEAD
   "fileCount": 2504,
-||||||| 005b3815
-  "fileCount": 2491,
-=======
-  "fileCount": 2499,
->>>>>>> origin/main
   "files": {
     "AUDIT_METRICS.md": "ad6279f6e9519075e2cb9174beb680423387bc33f4fada58b2d42f1b61be8b79",
     "AUTHORIZATION_CATALOG.md": "28d0b238a637c8c27e1e5d1e88fef868f57a92f0f566c4e17c2d6f8b119025d5",
@@ -111,14 +105,7 @@
     "contracts/api/auth-gateway/grpc/proto/saas/accounts/v1/solution_registry.proto": "73c616cdcb771eb2009375edbbb5b2ccfa9a0c7c33fefe41a94ee0335fbd4cfd",
     "contracts/api/auth-gateway/grpc/proto/saas/gateway/auth/v1/sidecar.proto": "08afae99e80bdd881fae61f0c643cf7745e9fef9e3e90f3b1dce80d2f87fbebb",
     "contracts/api/catalog.codefly.json": "dccb0125b1bf5d31bf05221abef1d47eaf31152faf71d6a36a54d2dd134edbf8",
-<<<<<<< HEAD
     "contracts/events/v1/events-contribution.schema.json": "63cd703c6214e02a5b2e92609fbe957417962f3a56f9820ada0840c3d40ee3c7",
-||||||| 005b3815
-    "contracts/api/catalog.codefly.json": "a6c2135ce1d961b8ff1fed948bb970f27b331421c9810b2c060e4026841e388d",
-    "contracts/events/v1/events-contribution.schema.json": "f3d3c82d145b5af0d64625d75523c58e2adede034bec7629c74e98ed7ffdf67b",
-=======
-    "contracts/events/v1/events-contribution.schema.json": "f3d3c82d145b5af0d64625d75523c58e2adede034bec7629c74e98ed7ffdf67b",
->>>>>>> origin/main
     "contracts/fixtures/v1/fixtures-contribution.schema.json": "da08840aa339512c8e0830087b2fd07b4440c9184475cb7333697850b25d1ad9",
     "contracts/frontend/v2/frontend-contribution.schema.json": "65edd76e7fbc8f0fa7b11a5b93c0cc647f79af528d648248fc4e668828a806dd",
     "contracts/permissions/v1/permissions-contribution.schema.json": "6bd7825e00935abb16a8a3abdc512eb6c4113499627778c6e715a0a8e4e88eb9",
@@ -599,13 +586,7 @@
     "services/accounts/code/pkg/business/sso_admin.go": "671740b4a9f5bbbdd6ba544e8e04f1da18b92bbceca5a9973ade9f95d85f13e9",
     "services/accounts/code/pkg/business/sso_admin_provider_test.go": "64f1ad9a95b778c3756d51cde08834c5398debe73590b27ec72d2392172eab25",
     "services/accounts/code/pkg/business/sso_admin_test.go": "7862802529d61c381c5a7eddb36c9d3e0d0bbbb54a238125460a89a63f4f6934",
-<<<<<<< HEAD
     "services/accounts/code/pkg/business/store.go": "15f851a238a6f37b8307b0acca2e2dd9c16113b558dd2366a6a6ee68492dab6b",
-||||||| 005b3815
-    "services/accounts/code/pkg/business/store.go": "141831be9ca7a5d8b67d8ba094d14e38c22914c1bb9ceabc0b52f038375cb2d3",
-=======
-    "services/accounts/code/pkg/business/store.go": "0038d8489bbcfe402e3b3c7ad73dc638082e775e8720cd8c90a8f926d8511893",
->>>>>>> origin/main
     "services/accounts/code/pkg/business/story_host_test.go": "7191de8ae018506ae22387d1080b941f2d6cb418e40ec7a0269d7ce651211f00",
     "services/accounts/code/pkg/business/teams.go": "be2da3873a6b2c81199eddf87ea6530a79ce7f8f4e40589df3b507c6b5e640bc",
     "services/accounts/code/pkg/business/teams_cache_test.go": "aa94653194b4adf250cc2968e66bc483d15125a5e7a048b1e62d8fdfb3e1003b",
@@ -952,12 +933,7 @@
     "services/accounts/code/pkg/infra/postgres_public_catalog.go": "e74ad3ed4bdf8dab78e82026cae46d9924f1f88e0eb36d543f20a9d8be9cd9c2",
     "services/accounts/code/pkg/infra/postgres_public_catalog_test.go": "252a6e488cd25000a007291cc8caeba8a6969f121ebace92bf3cb95ca97bdfbd",
     "services/accounts/code/pkg/infra/postgres_readable_sources.go": "a7f234e09e44468e22c8f10b7b96960c84f3e5941b75ba25a1f15d6c77bcbfe3",
-<<<<<<< HEAD
     "services/accounts/code/pkg/infra/postgres_resource_follows.go": "736300df1762818eedabc969096855713f14dc2fdd10a9164425859521641133",
-||||||| 005b3815
-=======
-    "services/accounts/code/pkg/infra/postgres_resource_follows.go": "b33014748b26a6454947ac5f46ddb4c9af14e2b6f64c5dfe45803cdbb93b7cf8",
->>>>>>> origin/main
     "services/accounts/code/pkg/infra/postgres_resource_follows_test.go": "e295e8130988291ee7c0847507dd0d4c038a74262da54ddac87ca13983eb52bb",
     "services/accounts/code/pkg/infra/postgres_retention.go": "afaa16c81a4ee3d9e0227ff6d6009a43ded55bb761d9cc57a58afdd008f8ca91",
     "services/accounts/code/pkg/infra/postgres_role_catalog.go": "915013cae659865e704214fdf2f43580be7fd3bd9f8ffdfd4ead27fe0a381e59",
@@ -2271,12 +2247,8 @@
     "services/store/migrations/141_datasource_source_github_installation.up.sql": "a802bb8ed655d590ed1c75a1699114e1cd3c5c522450a301fc2b20aaa01ed74c",
     "services/store/migrations/142_resource_follows.down.sql": "515fa330c8dc4f61e911fcc44ebda851bf9221cc10a94153c6c9cf03eef05455",
     "services/store/migrations/142_resource_follows.up.sql": "bea049fac6c9129ae684751a35165f715754abc71953b9c7fc71dbacdd84c4b0",
-<<<<<<< HEAD
     "services/store/migrations/143_notification_resource_reference.down.sql": "66c782a0b5d5fa460a13807d587cb1a1d45773ea99bdc06941d6ecb18f979836",
     "services/store/migrations/143_notification_resource_reference.up.sql": "11a38ff5379583cc31efe6a8c37b2a76aab43992dcc9a320c156c0a629ebef57",
-||||||| 005b3815
-=======
->>>>>>> origin/main
     "services/store/migrations/14_stripe_billing.down.sql": "b9d88feb2722a21eacf0745bfefcaff96c9fac962284e70e2cb42483e50fde46",
     "services/store/migrations/14_stripe_billing.up.sql": "64e84fac206a71d80a4601a3c2744ac39f0a38889de22bc5efe392428a6ddb1e",
     "services/store/migrations/15_platform_features.down.sql": "b1061c37a45ffd2973a8585557d6a29b6ca2cef21cc5897b99ddfcd2cf5370d6",
