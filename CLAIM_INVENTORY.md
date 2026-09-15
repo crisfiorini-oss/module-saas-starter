@@ -116,7 +116,7 @@ means concretely:
 | --- | --- | --- | --- | --- |
 | No **text** file in the repository names a real customer, partner, employer, or downstream consumer | AGENTS.md § Naming and confidentiality | `node module/tools/naming-gate.mjs check` scans every file's contents *and* its path, holding its forbidden terms as digests rather than literals; `naming-gate.test.mjs` covers the matcher and asserts the shipped tree is clean. Both run in the `base-integrity` job | **implemented** | #569 |
 | One checked-in **binary** descriptor still carries such a name | `packages/saas-sdk/generated/contract/contract.binpb` | **none — outside the gate's reach.** A compiled descriptor embeds its protos' comments, and the gate skips binaries, so nothing detects this | known drift, filed | #585 |
-| No pull request **title**, **body**, or **commit message** merged after #707 names a real customer, partner, employer, or downstream consumer | AGENTS.md § Naming and confidentiality | `node module/tools/naming-gate.mjs records <base>` runs the same digests through the same matcher over all three and fails the pull request; `naming-gate.test.mjs` covers it, including that the report names the matching mode and never the term. Runs in the `base-integrity` job on `pull_request` and `merge_group` | **implemented** | #707 |
+| No pull request **title**, **body**, or **commit message** merged after #707 names a real customer, partner, employer, or downstream consumer | AGENTS.md § Naming and confidentiality | `node module/tools/naming-gate.mjs records <base> <head>` runs the same digests through the same matcher over all three and fails the pull request; `naming-gate.test.mjs` covers it end to end over the CLI, including that the report names the matching mode and never the term or its line. Runs in the `base-integrity` job (a required context, and in the merge queue) on `pull_request` and `merge_group`, and again in `naming-records.yml` on `edited`, which the other trigger set does not cover | **implemented** | #707 |
 
   The gate runs as a step of the `base-integrity` job rather than as a job of
   its own, so it is mandatory through that job and adds no row to
@@ -125,9 +125,12 @@ means concretely:
   Three limits on what the first row establishes, none of them closed here.
   It scans the working tree, so it does not un-publish the names already in
   this repository's git history or in its public issues — #707 later added the
-  prevention half for new records (the third row below), but what is already
-  published stays published, which is why that row is scoped to records written
-  after it. And it reads text: the
+  pull request check (the third row below), but what is already published stays
+  published, which is why that row is scoped to records written after it. Note
+  what that check does and does not do: it blocks the merge, not the
+  publication, because by the time it runs the commit is already pushed to a
+  public repository. Only `scripts/hooks/commit-msg` runs earlier than that, and
+  it is opt-in. And it reads text: the
   accounts descriptor was regenerated with this change so that it matches its
   scrubbed proto, but the saas-sdk copy cannot be — `codefly generate client`
   refuses without `--force`, which also bumps the SDK toolchain, so it is
