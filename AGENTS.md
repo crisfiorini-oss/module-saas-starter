@@ -34,10 +34,12 @@ form (RBAC, delegation, Work Contexts, permission enforcement, audit) so every
 consumer reuses them; consumer-specific wiring stays in the consumer's own repo.
 The rule holds for public **and** private files alike, and for records as much
 as for files: a pull request's title, its body and its commit messages are
-checked in CI before it can merge (see [Building, testing, and
-CI](#building-testing-and-ci)). Prevention is the whole of the remedy there — a
-published record cannot be retracted, because GitHub keeps prior revisions of an
-edited body and a commit message cannot be changed without rewriting history.
+checked before it can merge (see [Building, testing, and
+CI](#building-testing-and-ci)). Be precise about which half does what — only the
+local hook prevents publication. By the time CI runs, the commit is already
+pushed to a public repository, so CI blocks the **merge**. A published record
+cannot be retracted afterwards: GitHub keeps prior revisions of an edited body,
+and a commit message cannot be changed without rewriting history.
 
 ## Boundaries — non-negotiable
 
@@ -309,8 +311,15 @@ SDK. See the solution repo for its own instructions.
   git config core.hooksPath scripts/hooks     # opt in: reject a bad commit message locally
   ```
 
-  The record check names only the matching mode, never the term, because its log
-  is public. A pushed message can no longer be edited, so fix a failure by
+  That `git config` replaces the hooks directory wholesale, so any hook already
+  in `.git/hooks` stops running until you unset it. The hook is the only half
+  that runs before publication — CI blocks the merge, by which point the commit
+  is already public.
+
+  The record check in CI names the matching mode and nothing else — not the
+  term, not the line — because its log is public and so is the record it points
+  into. To see the line, run `node module/tools/naming-gate.mjs message <file>`
+  locally. A pushed message can no longer be edited, so fix a failure by
   amending or rebasing rather than by adding a commit on top.
 - Go checks: this repository holds **six independent Go modules** — the root
   module, `module/tools`, and one per Go service (`accounts`, `auth-gateway`,

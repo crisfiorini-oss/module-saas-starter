@@ -5,7 +5,18 @@
 #
 #     git config core.hooksPath scripts/hooks
 #
-# Worth having even though CI enforces the same rule: CI fails after the message exists, and a
-# published commit message cannot be edited without rewriting history.
-set -e
+# That setting replaces the hooks directory wholesale, so any hook you already have in
+# .git/hooks stops running until you unset it.
+#
+# This is the only half of the gate that runs before the message is published. CI blocks the
+# merge, but by the time it runs the commit is already pushed to a public repository.
+#
+# A missing node is not a reason to reject every commit: an editor or GUI client that does not
+# source a login shell often has no version manager on PATH, and CI enforces the same rule
+# regardless. Refusing to commit there would break committing, not leaks.
+if ! command -v node >/dev/null 2>&1; then
+  echo "naming-gate: node not found on PATH, skipping the commit-message check (CI still enforces it)" >&2
+  exit 0
+fi
+
 exec node "$(dirname "$0")/../../module/tools/naming-gate.mjs" message "$1"

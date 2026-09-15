@@ -6,8 +6,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 
@@ -238,20 +239,29 @@ test("machine-generated skips apply in canonical, where paths carry a module/ pr
 });
 
 // Records — a pull request title or body, a commit message — scanned in a throwaway root.
-function messages(entries) {
+function messages(entries, options) {
   const root = termsRoot();
   try {
-    return messageErrors(entries, root);
+    return messageErrors(entries, root, options);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
-test("a record is reported by mode, never by the matched term", () => {
+test("a record is reported by mode, never by the matched term or its line", () => {
   const out = messages([{ label: "pull request title", text: "Wire up the ZorpCo tenant" }]);
-  assert.deepEqual(out, ["pull request title:1: forbidden name (mode: word)"]);
-  // The whole point of the redaction: CI logs are public, so the term must not survive the report.
+  assert.deepEqual(out, ["pull request title: forbidden name (mode: word)"]);
   assert.doesNotMatch(out.join("\n"), /zorpco/i);
+  // The line is withheld for the same reason the term is: this log is public, and so is the body
+  // a line number points into, so naming the line narrows the term to that line's few words.
+  assert.doesNotMatch(out.join("\n"), /:\d/);
+});
+
+test("the hook path reports the line, because its output never leaves the machine", () => {
+  const body = "Closes #12.\n\n## Summary\n\n- rolled out for ZorpCo\n";
+  assert.deepEqual(messages([{ label: "commit message", text: body }], { lines: true }), [
+    "commit message:5: forbidden name (mode: word)",
+  ]);
 });
 
 test("every mode names itself in a record", () => {
@@ -262,11 +272,22 @@ test("every mode names itself in a record", () => {
   assert.match(byMode("Sold to North Star Mutual"), /\(mode: phrase\)/);
 });
 
-test("a record line number points at the offending line of a body", () => {
-  const body = "Closes #12.\n\n## Summary\n\n- rolled out for ZorpCo\n";
-  assert.deepEqual(messages([{ label: "pull request body", text: body }]), [
-    "pull request body:5: forbidden name (mode: word)",
-  ]);
+test("a phrase broken by a line wrap is still caught", () => {
+  // Not an exotic shape — it is the convention. Commit bodies wrap at 72 columns and pull request
+  // bodies are hand-wrapped prose, and phrase mode carries the tier with no single distinctive
+  // word (a customer, a real person). A per-line n-gram never saw any of these.
+  for (const wrapped of [
+    "Rolled out the pilot for North Star\nMutual last week.",
+    "Rolled out for North Star\n  Mutual last week.",
+    "Delivered to North\nStar\nMutual.",
+  ]) {
+    assert.deepEqual(messages([{ label: "r", text: wrapped }]), ["r: forbidden name (mode: phrase)"], wrapped);
+  }
+});
+
+test("a phrase broken by a line wrap is caught in the tree too", () => {
+  const out = joined({ "a.md": "Sold to North Star\nMutual in March.\n" });
+  assert.match(out, /a\.md:1: forbidden name \(North Star Mutual\)/);
 });
 
 test("a clean record passes, and each entry is reported under its own label", () => {
@@ -277,38 +298,48 @@ test("a clean record passes, and each entry is reported under its own label", ()
     ]),
     [],
   );
-  const out = messages([
-    { label: "pull request title", text: "ZorpCo" },
-    { label: "commit abc1234 message", text: "Quill" },
-  ]);
-  assert.deepEqual(out, [
-    "pull request title:1: forbidden name (mode: word)",
-    "commit abc1234 message:1: forbidden name (mode: proper)",
+  assert.deepEqual(
+    messages([
+      { label: "pull request title", text: "ZorpCo" },
+      { label: "commit abc1234 message", text: "Quill" },
+    ]),
+    [
+      "pull request title: forbidden name (mode: word)",
+      "commit abc1234 message: forbidden name (mode: proper)",
+    ],
+  );
+});
+
+test("a record reports each mode once, however many times it matches", () => {
+  assert.deepEqual(messages([{ label: "r", text: "ZorpCo and zorpco\nand ZorpCo again" }]), [
+    "r: forbidden name (mode: word)",
   ]);
 });
 
-test("one line reports a mode once, however many times it matches", () => {
-  assert.deepEqual(messages([{ label: "r", text: "ZorpCo and zorpco and ZorpCo again" }]), [
-    "r:1: forbidden name (mode: word)",
+test("a commit message keeps its comment lines, which git does not always strip", () => {
+  // `git commit -m` and `-F` use cleanup=whitespace, which keeps `#` lines, so a line like
+  // "#707 rolled out for <name>" reaches the stored message verbatim. Blanking it here hid
+  // exactly the text the gate exists to read.
+  const kept = commitMessageBody("feat: x\n\n#707 rolled out for ZorpCo.");
+  assert.match(kept, /#707 rolled out for ZorpCo\./);
+  assert.deepEqual(messages([{ label: "commit message", text: kept }]), [
+    "commit message: forbidden name (mode: word)",
   ]);
 });
 
-test("a commit message is the author's text, not git's comments or the verbose diff", () => {
+test("the verbose diff below the scissors line is not the message", () => {
   const raw = [
     "fix: a clean subject",
     "",
-    "Rolled out for ZorpCo.",
-    "# Please enter the commit message for your changes.",
-    "# On branch quill-control",
+    "For a consuming solution.",
     "# ------------------------ >8 ------------------------",
     "diff --git a/a.md b/a.md",
     "+ZorpCo",
   ].join("\n");
-  // Only line 3 is the author's; the comment block and everything below the scissors line are
-  // git's own prose and tree content the `check` scan already owns. Line 3 must still read 3.
-  assert.deepEqual(messages([{ label: "commit message", text: commitMessageBody(raw) }]), [
-    "commit message:3: forbidden name (mode: word)",
-  ]);
+  // Tree content, which the `check` scan already owns.
+  assert.deepEqual(messages([{ label: "commit message", text: commitMessageBody(raw) }]), []);
+  // Blanked rather than dropped, so a reported line still matches the editor.
+  assert.equal(commitMessageBody(raw).split("\n").length, raw.split("\n").length);
 });
 
 test("a record scan with a missing term list fails closed rather than passing silently", () => {
@@ -318,6 +349,84 @@ test("a record scan with a missing term list fails closed rather than passing si
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// End to end over the CLI. The exported functions cannot cover this: a change that stopped
+// calling process.exit — a refactor, a `--warn` flag — would leave every unit test above green
+// while the gate passed everything forever.
+//
+// These also pin the main-module guard. The temp root sits under the system temp directory, which
+// is reached through a symlink on macOS, so an argv[1]-versus-realpath mismatch shows up here as
+// a command that exits 0 having printed nothing — the same silence that `modules/saas-starter`,
+// a symlink to `module/`, would produce in the real tree.
+function cliRoot() {
+  const root = termsRoot();
+  copyFileSync(new URL("./naming-gate.mjs", import.meta.url), join(root, "tools", "naming-gate.mjs"));
+  return root;
+}
+
+const git = (root, args) =>
+  execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.com", ...args], {
+    cwd: root,
+    encoding: "utf8",
+  });
+
+const cli = (root, args, env = {}) =>
+  spawnSync(process.execPath, [join(root, "tools", "naming-gate.mjs"), ...args], {
+    cwd: root,
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
+
+function withRepo(run) {
+  const root = cliRoot();
+  try {
+    git(root, ["init", "-q", "."]);
+    git(root, ["commit", "-q", "--allow-empty", "-m", "chore: base"]);
+    return run(root);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test("records exits non-zero on a forbidden name, printing neither the term nor a line", () => {
+  withRepo((root) => {
+    git(root, ["commit", "-q", "--allow-empty", "-m", "feat: roll out\n\nRequested by ZorpCo."]);
+    const bad = cli(root, ["records", "HEAD~1"]);
+    assert.equal(bad.status, 1, bad.stdout + bad.stderr);
+    assert.doesNotMatch(bad.stderr, /zorpco/i);
+    assert.doesNotMatch(bad.stderr, /message:\d/);
+
+    const clean = cli(root, ["records", "HEAD"], { NAMING_PR_TITLE: "fix: a clean title" });
+    assert.equal(clean.status, 0, clean.stdout + clean.stderr);
+  });
+});
+
+test("a record separator inside a commit message cannot truncate the scan", () => {
+  // A literal \x1e used to terminate the record early: everything after it went unscanned while
+  // the run still reported a clean count. NUL is the only byte a commit message cannot contain.
+  withRepo((root) => {
+    git(root, ["commit", "-q", "--allow-empty", "-m", "feat: x\n\nRequested by ZorpCo."]);
+    const out = cli(root, ["records", "HEAD~1"]);
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+  });
+});
+
+test("a run that scanned nothing fails instead of reporting success", () => {
+  withRepo((root) => {
+    const out = cli(root, ["records", "HEAD"]);
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(out.stderr, /nothing to scan/);
+  });
+});
+
+test("message exits non-zero and does report the line, for local use", () => {
+  withRepo((root) => {
+    writeFileSync(join(root, "msg.txt"), "feat: x\n\nRolled out for ZorpCo.\n");
+    const out = cli(root, ["message", join(root, "msg.txt")]);
+    assert.equal(out.status, 1, out.stdout + out.stderr);
+    assert.match(out.stderr, /commit message:3: forbidden name \(mode: word\)/);
+  });
 });
 
 test("the shipped tree is clean", () => {

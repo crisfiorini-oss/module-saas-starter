@@ -1,0 +1,47 @@
+name: naming-records
+
+# `edited` is the load-bearing trigger here, and the reason this workflow exists at all.
+#
+# ci.yml runs the same record check, but its `pull_request` trigger takes the default types —
+# opened, synchronize, reopened. A title or body edited after the last push fires `edited`, which
+# nothing listened for, so the routine tidy-up of a description just before merging was never
+# re-checked. That is not a cosmetic gap: this repository squashes with
+# `squash_title: COMMIT_OR_PR_TITLE`, so an edited pull request title is written into main's
+# permanent history, which is the one place a name cannot be edited out again.
+#
+# Re-running ci.yml on every description edit would be the other way to close this, but its
+# concurrency group cancels the in-flight run, so editing a description mid-run would cancel and
+# restart nineteen checks. This workflow runs one check in seconds instead.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: naming-records-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  naming-records:
+    name: Naming records
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The check reads every commit message in base..HEAD.
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Enforce generic placeholder names in the pull request and its commits
+        env:
+          # Through the environment, never interpolated into the script: both are
+          # attacker-controlled text.
+          NAMING_PR_TITLE: ${{ github.event.pull_request.title }}
+          NAMING_PR_BODY: ${{ github.event.pull_request.body }}
+          NAMING_BASE: ${{ github.event.pull_request.base.sha }}
+        run: node module/tools/naming-gate.mjs records "$NAMING_BASE"

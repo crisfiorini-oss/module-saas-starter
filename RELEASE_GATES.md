@@ -510,14 +510,24 @@ commit message cannot be edited at all without rewriting history. So a second
 step, `naming-gate.mjs records`, runs the same digests through the same matcher
 over the pull request's **title**, its **body**, and every **commit message** in
 the range, and fails the pull request before it can merge. It reports the
-matching mode and the line, never the term: that log is public, and quoting the
-match would republish exactly what the gate exists to keep out of it. It runs on
-`pull_request` and on `merge_group`, where the title and body do not exist and
-the commits alone are checked.
+matching mode and nothing else — not the term, and not the line: that log is
+public, and so is the record a line number would point into, so naming the line
+would narrow the term to that line's handful of words. Run `naming-gate.mjs
+message <file>` locally when you need the line.
 
-Prevention is the whole of the remedy here. Cleaning up a record that is already
-published is a separate remediation and only a partial one, for the same two
-reasons that make the check worth having.
+It runs from two places, and both are load-bearing. In `ci.yml` it is a step of
+the `base-integrity` job, which is a required context and also runs in the merge
+queue — there the title and body do not exist, and the commits alone are checked.
+In `naming-records.yml` it runs again on the `edited` event, which `ci.yml` does
+not take: a title or body edited after the last push fires nothing else, and
+because this repository squashes with `squash_title: COMMIT_OR_PR_TITLE`, an
+edited title is written into main's permanent history.
+
+Be precise about what this buys. Only `scripts/hooks/commit-msg` prevents
+publication; by the time CI runs, the commit is already pushed to a public
+repository, so CI blocks the merge rather than the leak. Cleaning up a record
+that is already published is a separate remediation and only a partial one, for
+the same two reasons that make the check worth having.
 
 Locally:
 
