@@ -18,7 +18,7 @@ import {
 } from "@/shared/ui";
 import { useCreateRole } from "../service/mutations";
 
-export function RoleForm() {
+export function RoleForm({ orgId }: { orgId: string }) {
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [description, setDescription] = useState("");
@@ -55,7 +55,12 @@ export function RoleForm() {
 	function handleSubmit() {
 		if (!name.trim()) return;
 		createRole.mutate(
-			{ name: name.trim(), description: description.trim(), permissions },
+			{
+				name: name.trim(),
+				description: description.trim(),
+				permissions,
+				orgId,
+			},
 			{
 				onSuccess: () => {
 					toast.success(`Role "${name.trim()}" created`);
@@ -77,7 +82,9 @@ export function RoleForm() {
 				<DialogHeader>
 					<DialogTitle>Create Role</DialogTitle>
 					<DialogDescription>
-						Define a new role with custom permissions.
+						{orgId
+							? "Define a role for the selected organization."
+							: "Define a global role with custom permissions."}
 					</DialogDescription>
 				</DialogHeader>
 
