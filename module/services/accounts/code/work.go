@@ -226,16 +226,23 @@ func doWork(ctx context.Context) (Clean, error) {
 	}
 	service.SetFollowables(followables)
 	// Materialization is idempotent, so a restart converges on the rows that
-	// exist. It fails startup for the same reason VerifyEventWiring does: a host
-	// with no subscription receives no followable event, and that loss is
-	// invisible at runtime.
+	// already exist. It deliberately does not fail startup: VerifyEventWiring
+	// short-circuits on a wired transport and never reaches the database, so this
+	// is the only write at boot, and returning its error would turn a momentary
+	// database outage into a crash-loop for the whole service. Leaving the host
+	// unsubscribed would silently drop every followable event, so the failure is
+	// loud and retried in the background rather than tolerated.
 	if err := service.MaterializeFollowSubscriptions(ctx); err != nil {
-		return nil, err
+		wool.Get(ctx).In("follows").Error(
+			"cannot materialize follow subscriptions; retrying in the background",
+			wool.ErrField(err))
+		go retryFollowSubscriptions(ctx, service)
 	}
 	followFanoutWorker, err := jobs.NewWorker(jobs.WorkerConfig{
-		Store:   jobStore,
-		Queue:   business.FollowFanoutQueue,
-		Handler: service.FollowFanoutHandler(),
+		Store:      jobStore,
+		Queue:      business.FollowFanoutQueue,
+		Handler:    service.FollowFanoutHandler(),
+		RetryDelay: business.FollowFanoutRetryDelay,
 	})
 	if err != nil {
 		return nil, err
@@ -1218,6 +1225,34 @@ func configuredExternalAuditSink() (business.ExternalAuditSink, error) {
 // have NO app-layer throttle: abuse protection disabled AND no rate limiter
 // wired (no Redis). Either guard alone is a backstop; only the combination
 // leaves them open.
+// retryFollowSubscriptions re-attempts follow subscription materialization
+// until it lands. A host with no subscription receives no followable event, and
+// that loss is invisible at runtime — this is what closes the gap left by a
+// database outage during boot without holding the service hostage to it. It
+// backs off so a sustained outage does not become sustained load, and reports
+// every attempt so the gap stays visible while it is open.
+func retryFollowSubscriptions(ctx context.Context, service *business.Service) {
+	const maxDelay = 5 * time.Minute
+	delay := 5 * time.Second
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
+		}
+		if err := service.MaterializeFollowSubscriptions(ctx); err != nil {
+			wool.Get(ctx).In("follows").Warn(
+				"retrying follow subscription materialization", wool.ErrField(err))
+			if delay < maxDelay {
+				delay *= 2
+			}
+			continue
+		}
+		wool.Get(ctx).In("follows").Info("follow subscriptions materialized after retry")
+		return
+	}
+}
+
 func anonymousEndpointsUnprotected(abuseDisabled, rateLimiterWired bool) bool {
 	return abuseDisabled && !rateLimiterWired
 }

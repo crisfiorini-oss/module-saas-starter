@@ -111,10 +111,7 @@ func (s *Service) createNotificationWithSettings(
 	}
 	notificationID := NewIDString()
 	if input.IdempotencyKey != "" {
-		notificationID = uuid.NewSHA1(
-			uuid.NameSpaceURL,
-			[]byte("saas-starter/notification/"+input.IdempotencyKey),
-		).String()
+		notificationID = notificationIDForKey(input.IdempotencyKey)
 	}
 	notification := &Notification{
 		ID:           notificationID,
@@ -131,6 +128,17 @@ func (s *Service) createNotificationWithSettings(
 		return nil, err
 	}
 	return notification, nil
+}
+
+// notificationIDForKey derives the deterministic row id an idempotency key
+// resolves to, which is what makes an identical retry converge on one row. A
+// caller that needs to know whether a keyed delivery already exists derives the
+// id through this rather than restating the rule.
+func notificationIDForKey(idempotencyKey string) string {
+	return uuid.NewSHA1(
+		uuid.NameSpaceURL,
+		[]byte("saas-starter/notification/"+idempotencyKey),
+	).String()
 }
 
 // ListNotifications returns paginated notifications for a user, less any follow

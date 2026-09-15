@@ -33,6 +33,30 @@ func (s *PostgresStore) CreateNotification(ctx context.Context, n *business.Noti
 	return nil
 }
 
+// ExistingNotificationIDs reports which of the given ids already have a row.
+// The lookup spans users, so it runs under the control-plane role; a follow
+// fan-out uses it to skip the recipients a previous attempt already wrote.
+func (s *PostgresStore) ExistingNotificationIDs(ctx context.Context, ids []string) (map[string]struct{}, error) {
+	if len(ids) == 0 {
+		return map[string]struct{}{}, nil
+	}
+	q := s.getQueryExecutor(ctx)
+	rows, err := q.Query(ctx, `SELECT id FROM notifications WHERE id = ANY($1)`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	existing := make(map[string]struct{}, len(ids))
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		existing[id] = struct{}{}
+	}
+	return existing, rows.Err()
+}
+
 func (s *PostgresStore) ListNotifications(ctx context.Context, userID string, pageSize int, pageToken string) ([]*business.Notification, string, error) {
 	q := s.getQueryExecutor(ctx)
 

@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/codefly-dev/core/wool"
 	"github.com/google/uuid"
@@ -47,6 +48,7 @@ type Service struct {
 	webAuthn                  WebAuthnEngine    // required for passkey registration and assertion
 	jobOperations             jobs.Operations   // isolated, payload-free platform operations
 	eventOperations           events.Operations // isolated, payload-free domain-event operations
+	followablesMu             sync.RWMutex
 	followables               []FollowableResource
 	followableByEvent         map[string]string // declared followable event type → resource type
 	acquisitionMode           gen.AcquisitionMode

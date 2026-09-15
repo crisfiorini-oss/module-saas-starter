@@ -3,9 +3,12 @@ package business_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
 	"testing"
 
 	"accounts/pkg/business"
+	"accounts/pkg/events"
 	gen "accounts/pkg/gen/saas/accounts/v1"
 	jobsv1 "accounts/pkg/gen/saas/jobs/v1"
 	"accounts/pkg/jobs"
@@ -31,6 +34,8 @@ type followFanoutStore struct {
 	writes         int                               // every CreateNotification call, converged or not
 	accessChecks   int
 	followerReads  int
+	existenceReads int
+	ignoreExisting bool // simulate a concurrent attempt: the filter sees no prior row
 	checkAccessErr error
 }
 
@@ -64,9 +69,40 @@ func (s *followFanoutStore) WithUserTx(ctx context.Context, _ string, fn func(co
 	return fn(ctx)
 }
 
-func (s *followFanoutStore) ListResourceFollowers(_ context.Context, orgID, resourceType, resourceID string) ([]string, error) {
+// ListResourceFollowers emulates the real keyset page: ordered by user id,
+// strictly after the cursor, capped at limit. A fake that ignored the cursor
+// would let a pagination bug pass.
+func (s *followFanoutStore) ListResourceFollowers(
+	_ context.Context, orgID, resourceType, resourceID, after string, limit int,
+) ([]string, error) {
 	s.followerReads++
-	return s.followers[followKey(orgID, resourceType, resourceID)], nil
+	all := append([]string(nil), s.followers[followKey(orgID, resourceType, resourceID)]...)
+	sort.Strings(all)
+	page := make([]string, 0, limit)
+	for _, userID := range all {
+		if after != "" && userID <= after {
+			continue
+		}
+		if len(page) == limit {
+			break
+		}
+		page = append(page, userID)
+	}
+	return page, nil
+}
+
+func (s *followFanoutStore) ExistingNotificationIDs(_ context.Context, ids []string) (map[string]struct{}, error) {
+	s.existenceReads++
+	existing := map[string]struct{}{}
+	if s.ignoreExisting {
+		return existing, nil
+	}
+	for _, id := range ids {
+		if _, ok := s.notifications[id]; ok {
+			existing[id] = struct{}{}
+		}
+	}
+	return existing, nil
 }
 
 func (s *followFanoutStore) ResourceFollowIsLive(_ context.Context, orgID, userID, resourceType, resourceID string) (bool, error) {
@@ -172,8 +208,27 @@ func TestFollowFanoutConvergesOnReplay(t *testing.T) {
 	// A duplicate journal delivery on the original key lands on the same row too.
 	require.NoError(t, handler(context.Background(), followJob("event-1", "event-1:sub-1")))
 
-	require.Equal(t, 3, store.writes, "every delivery must reach the write path")
 	require.Len(t, store.notifications, 1, "all three converge on one inbox item")
+	require.Equal(t, 1, store.writes,
+		"the later deliveries are filtered before the write path rather than deduplicated inside it")
+}
+
+// TestFollowFanoutConvergesWhenTwoAttemptsRace keeps the write path's own
+// convergence honest. The already-delivered filter is an optimisation and cannot
+// see a concurrent attempt: two workers on the same event both find no row and
+// both write. The derived row id is what makes that land on one item.
+func TestFollowFanoutConvergesWhenTwoAttemptsRace(t *testing.T) {
+	store := newFollowFanoutStore()
+	store.followers[followKey(followOrg, followResourceType, followResourceID)] = []string{"user-1"}
+	store.ignoreExisting = true // both attempts observe an empty inbox, as a race would
+	service := followService(t, store)
+	handler := service.FollowFanoutHandler()
+
+	require.NoError(t, handler(context.Background(), followJob("event-1", "k1")))
+	require.NoError(t, handler(context.Background(), followJob("event-1", "k2")))
+
+	require.Equal(t, 2, store.writes, "both attempts reach the write path")
+	require.Len(t, store.notifications, 1, "and converge on one row by derived id")
 }
 
 // TestFollowFanoutDistinctEventsProduceDistinctItems is the other half of the
@@ -335,4 +390,190 @@ func TestFollowFanoutSeparatesRecipients(t *testing.T) {
 		recipients[notification.UserID] = true
 	}
 	require.Equal(t, map[string]bool{"user-1": true, "user-2": true}, recipients)
+}
+
+// TestFollowFanoutPagesAnUnboundedFollowerSet is the bound on the unit of work.
+// Nothing limits how many people follow one instance, so a fan-out that read the
+// whole set would hold it in memory and in one query; this proves it walks the
+// set in bounded pages and still reaches the last follower.
+func TestFollowFanoutPagesAnUnboundedFollowerSet(t *testing.T) {
+	store := newFollowFanoutStore()
+	followers := make([]string, 0, 1200)
+	for i := 0; i < 1200; i++ {
+		followers = append(followers, fmt.Sprintf("user-%04d", i))
+	}
+	store.followers[followKey(followOrg, followResourceType, followResourceID)] = followers
+	service := followService(t, store)
+
+	require.NoError(t, service.FollowFanoutHandler()(context.Background(), followJob("event-1", "k1")))
+
+	require.Len(t, store.notifications, 1200, "every follower is reached across pages")
+	require.Equal(t, 3, store.followerReads, "1200 followers is three pages of 500, not one unbounded read")
+}
+
+// TestFollowFanoutSkipsRecipientsAnEarlierAttemptWrote is the retry-cost bound: a
+// job that failed near the end of a large follower set must not redo the access
+// check and the write for everyone behind it.
+func TestFollowFanoutSkipsRecipientsAnEarlierAttemptWrote(t *testing.T) {
+	store := newFollowFanoutStore()
+	store.followers[followKey(followOrg, followResourceType, followResourceID)] =
+		[]string{"user-1", "user-2", "user-3"}
+	service := followService(t, store)
+	handler := service.FollowFanoutHandler()
+
+	require.NoError(t, handler(context.Background(), followJob("event-1", "k1")))
+	require.Equal(t, 3, store.writes)
+	writesAfterFirst, checksAfterFirst := store.writes, store.accessChecks
+
+	// The same event again — a relay redelivery or a replay under a fresh job key.
+	require.NoError(t, handler(context.Background(), followJob("event-1", "k1:replay:abc")))
+
+	require.Equal(t, writesAfterFirst, store.writes, "already-written recipients are not re-written")
+	require.Equal(t, checksAfterFirst, store.accessChecks, "nor re-access-checked")
+	require.Len(t, store.notifications, 3, "and the inbox still holds exactly one item each")
+}
+
+// TestFollowDeliveryKeyDoesNotCollideOnEmbeddedSeparators pins the delivery key's
+// shape. resource_id is the envelope subject — an arbitrary module-supplied
+// string — so a key that joined its parts on a separator would let these two
+// distinct tuples hash to one preimage and collapse two people's items into one.
+func TestFollowDeliveryKeyDoesNotCollideOnEmbeddedSeparators(t *testing.T) {
+	store := newFollowFanoutStore()
+	store.followers[followKey(followOrg, followResourceType, "a\x00b")] = []string{"c"}
+	store.followers[followKey(followOrg, followResourceType, "a")] = []string{"b\x00c"}
+	service := followService(t, store)
+	handler := service.FollowFanoutHandler()
+
+	first := followJob("event-1", "k1")
+	first.Attributes["subject"] = "a\x00b"
+	second := followJob("event-1", "k2")
+	second.Attributes["subject"] = "a"
+
+	require.NoError(t, handler(context.Background(), first))
+	require.NoError(t, handler(context.Background(), second))
+
+	require.Len(t, store.notifications, 2,
+		"same event id, shifted split between resource id and user id: these are different deliveries")
+}
+
+// followSubscriptionStore is the seam for host subscription materialization.
+type followSubscriptionStore struct {
+	business.Store
+	subs    []*business.EventSubscription
+	revoked []string
+	nextID  int
+}
+
+func (s *followSubscriptionStore) WithControlPlane(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
+}
+
+func (s *followSubscriptionStore) CreateEventSubscription(
+	_ context.Context, sub *business.EventSubscription,
+) (*business.EventSubscription, bool, error) {
+	for _, existing := range s.subs {
+		if existing.SubscriberPrincipalID == sub.SubscriberPrincipalID &&
+			existing.TypePattern == sub.TypePattern && existing.Queue == sub.Queue {
+			return existing, false, nil
+		}
+	}
+	s.nextID++
+	stored := *sub
+	stored.ID = fmt.Sprintf("sub-%d", s.nextID)
+	s.subs = append(s.subs, &stored)
+	return &stored, true, nil
+}
+
+func (s *followSubscriptionStore) ListEventSubscriptions(
+	_ context.Context, principal string,
+) ([]*business.EventSubscription, error) {
+	var live []*business.EventSubscription
+	for _, sub := range s.subs {
+		if sub.SubscriberPrincipalID == principal {
+			live = append(live, sub)
+		}
+	}
+	return live, nil
+}
+
+func (s *followSubscriptionStore) RevokeEventSubscription(
+	_ context.Context, subscriptionID, principal string,
+) (bool, error) {
+	for i, sub := range s.subs {
+		if sub.ID == subscriptionID && sub.SubscriberPrincipalID == principal {
+			s.subs = append(s.subs[:i], s.subs[i+1:]...)
+			s.revoked = append(s.revoked, subscriptionID)
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// TestMaterializeFollowSubscriptionsCreatesRowsTheRelayWouldMatch covers the
+// path every fan-out test takes for granted. Those tests hand the handler a job
+// directly; nothing else asserts that a subscription exists for the relay to
+// enqueue through, so a wrong queue or a missing principal would leave the
+// bridge silently inert with the whole suite green.
+func TestMaterializeFollowSubscriptionsCreatesRowsTheRelayWouldMatch(t *testing.T) {
+	const secondEvent = "documents.entry.version_minted"
+	store := &followSubscriptionStore{}
+	service, err := business.NewService(store)
+	require.NoError(t, err)
+	service.SetFollowables([]business.FollowableResource{
+		{ResourceType: followResourceType, Events: []string{followEventType, secondEvent}},
+	})
+
+	require.NoError(t, service.MaterializeFollowSubscriptions(context.Background()))
+
+	require.Len(t, store.subs, 2)
+	for _, sub := range store.subs {
+		// Migration 134's subscriber_kind CHECK refuses a non-webhook row with no
+		// principal, and migration 119's queue CHECK reserves events.relay.
+		require.Equal(t, business.ModulePrincipalID("follows"), sub.SubscriberPrincipalID)
+		require.NotEqual(t, "events.relay", sub.Queue)
+		// A partitioned followable type on an ordered subscription would serialize
+		// every producing mutation in the organization.
+		require.Equal(t, string(events.DeliveryUnordered), sub.Delivery)
+	}
+	// The queue the subscription routes to must be the queue the worker claims,
+	// and the pattern must be one the relay's matcher actually selects.
+	for _, eventType := range []string{followEventType, secondEvent} {
+		matched := false
+		for _, sub := range store.subs {
+			if sub.Queue == business.FollowFanoutQueue && events.Matches(sub.TypePattern, eventType) {
+				matched = true
+			}
+		}
+		require.Truef(t, matched, "no subscription on %s matches %s; the relay would enqueue nowhere",
+			business.FollowFanoutQueue, eventType)
+	}
+
+	require.NoError(t, service.MaterializeFollowSubscriptions(context.Background()))
+	require.Len(t, store.subs, 2, "re-materializing converges on the rows that exist")
+	require.Empty(t, store.revoked)
+}
+
+// TestMaterializeFollowSubscriptionsRevokesAWithdrawnDeclaration stops the host
+// accumulating subscriptions forever. Without it, dropping a follows: entry
+// leaves the row live and the relay keeps enqueueing a job per publish that the
+// handler can only acknowledge as a no-op.
+func TestMaterializeFollowSubscriptionsRevokesAWithdrawnDeclaration(t *testing.T) {
+	const withdrawn = "documents.entry.version_minted"
+	store := &followSubscriptionStore{}
+	service, err := business.NewService(store)
+	require.NoError(t, err)
+	service.SetFollowables([]business.FollowableResource{
+		{ResourceType: followResourceType, Events: []string{followEventType, withdrawn}},
+	})
+	require.NoError(t, service.MaterializeFollowSubscriptions(context.Background()))
+	require.Len(t, store.subs, 2)
+
+	service.SetFollowables([]business.FollowableResource{
+		{ResourceType: followResourceType, Events: []string{followEventType}},
+	})
+	require.NoError(t, service.MaterializeFollowSubscriptions(context.Background()))
+
+	require.Len(t, store.subs, 1)
+	require.Equal(t, followEventType, store.subs[0].TypePattern)
+	require.Len(t, store.revoked, 1, "the withdrawn declaration's subscription is retired, not left live")
 }

@@ -558,11 +558,19 @@ type Store interface {
 	CreateResourceFollow(ctx context.Context, follow *ResourceFollow) error
 	RevokeResourceFollow(ctx context.Context, userID, resourceType, resourceID string) error
 
-	// ListResourceFollowers answers who currently follows one resource. It reads
-	// across users, so it runs under WithControlPlane rather than any one
-	// follower's transaction; the result is only a candidate set, and each
-	// candidate's access and follow are rechecked before anything is written.
-	ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID string) ([]string, error)
+	// ListResourceFollowers answers who currently follows one resource, one
+	// bounded page at a time. It reads across users, so it runs under
+	// WithControlPlane rather than any one follower's transaction; the result is
+	// only a candidate set, and each candidate's access and follow are rechecked
+	// before anything is written. Nothing bounds how many people follow one
+	// instance, so the caller pages with `after` (the last user id it saw) rather
+	// than materializing the whole set.
+	ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID, after string, limit int) ([]string, error)
+	// ExistingNotificationIDs reports which of the given notification ids already
+	// exist. Notification ids are derived from the delivery key, so a fan-out
+	// retry uses this to skip the followers it already wrote instead of redoing
+	// the access check and the write for every one of them.
+	ExistingNotificationIDs(ctx context.Context, ids []string) (map[string]struct{}, error)
 	// ResourceFollowIsLive re-reads one follower's own follow. It runs inside the
 	// follower's WithUserTx alongside the notification write, which is what makes
 	// a follow revoked before that read suppress the item and stops a replay

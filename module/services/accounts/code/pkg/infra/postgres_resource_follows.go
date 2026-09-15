@@ -36,19 +36,26 @@ func (s *PostgresStore) CreateResourceFollow(ctx context.Context, follow *busine
 	).Scan(&follow.ID)
 }
 
-// ListResourceFollowers returns the users who currently follow one resource.
-// The read spans users, so it runs under the control-plane role; RLS on
-// resource_follows keys on the follower, which would otherwise reduce this to
-// whichever single user's transaction happened to be open. Ordering is stable so
-// a fan-out processes followers in the same order on every attempt.
-func (s *PostgresStore) ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID string) ([]string, error) {
+// ListResourceFollowers returns one bounded page of the users who currently
+// follow a resource. The read spans users, so it runs under the control-plane
+// role; RLS on resource_follows keys on the follower, which would otherwise
+// reduce this to whichever single user's transaction happened to be open.
+//
+// It pages on user_id rather than returning everything: nothing limits how many
+// people follow one instance, and an unbounded result would put the whole set in
+// memory and in one query. user_id is unique per (org, resource) under the
+// partial unique index, so it is a total order and a keyset cursor cannot skip
+// or repeat a follower.
+func (s *PostgresStore) ListResourceFollowers(ctx context.Context, orgID, resourceType, resourceID, after string, limit int) ([]string, error) {
 	q := s.getQueryExecutor(ctx)
 	rows, err := q.Query(ctx, `
 		SELECT user_id FROM public.resource_follows
 		WHERE org_id = $1 AND resource_type = $2 AND resource_id = $3
 		  AND revoked_at IS NULL
-		ORDER BY created_at, user_id`,
-		orgID, resourceType, resourceID)
+		  AND ($4::uuid IS NULL OR user_id > $4::uuid)
+		ORDER BY user_id
+		LIMIT $5`,
+		orgID, resourceType, resourceID, nilIfEmpty(after), limit)
 	if err != nil {
 		return nil, err
 	}

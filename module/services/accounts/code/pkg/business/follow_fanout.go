@@ -4,7 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
+	"fmt"
+	"time"
 
 	"accounts/pkg/events"
 	gen "accounts/pkg/gen/saas/accounts/v1"
@@ -40,7 +41,34 @@ const (
 	// subject that carries the resource id for a declared followable type.
 	followEventIDAttribute      = "id"
 	followEventSubjectAttribute = "subject"
+
+	// followFanoutPageSize bounds one page of the follower scan. Nothing limits
+	// how many people follow one instance, so the fan-out walks the set in pages:
+	// one unbounded scan would hold every follower in memory and in one query,
+	// and an attempt failing near the end would repeat every check behind it.
+	followFanoutPageSize = 500
 )
+
+// FollowFanoutRetryDelay is the backoff between attempts at one event's fan-out.
+// It is stated rather than left to the platform default because a fan-out walks
+// a whole follower set: coming straight back at a queue whose unit of work is
+// that large turns a transient database problem into sustained load.
+func FollowFanoutRetryDelay(attempt uint32) time.Duration {
+	schedule := [...]time.Duration{
+		10 * time.Second,
+		1 * time.Minute,
+		5 * time.Minute,
+		15 * time.Minute,
+		1 * time.Hour,
+	}
+	if attempt == 0 {
+		attempt = 1
+	}
+	if int(attempt) > len(schedule) {
+		return schedule[len(schedule)-1]
+	}
+	return schedule[attempt-1]
+}
 
 // FollowableResource is one declared followable noun and the committed changes
 // worth notifying on. It is the host's port onto the events contribution's
@@ -58,13 +86,37 @@ type FollowableResource struct {
 // Declaring nothing leaves the bridge inert: every event resolves to no
 // followable resource and is acknowledged without a read.
 func (s *Service) SetFollowables(declarations []FollowableResource) {
-	s.followables = append([]FollowableResource(nil), declarations...)
-	s.followableByEvent = make(map[string]string, len(declarations))
+	byEvent := make(map[string]string)
 	for _, declared := range declarations {
 		for _, eventType := range declared.Events {
-			s.followableByEvent[eventType] = declared.ResourceType
+			byEvent[eventType] = declared.ResourceType
 		}
 	}
+	// The worker reads these on its own goroutines. Wiring calls this once before
+	// the worker starts, but the setter is exported on the Service every request
+	// handler holds, so the guard is what keeps a later caller from writing the
+	// map out from under a fan-out in flight.
+	s.followablesMu.Lock()
+	defer s.followablesMu.Unlock()
+	s.followables = append([]FollowableResource(nil), declarations...)
+	s.followableByEvent = byEvent
+}
+
+// followableResourceType resolves a published event type to the followable
+// resource it reports a change to.
+func (s *Service) followableResourceType(eventType string) (string, bool) {
+	s.followablesMu.RLock()
+	defer s.followablesMu.RUnlock()
+	resourceType, declared := s.followableByEvent[eventType]
+	return resourceType, declared
+}
+
+// declaredFollowables returns a snapshot of the declarations, so materialization
+// walks a stable list rather than the live one.
+func (s *Service) declaredFollowables() []FollowableResource {
+	s.followablesMu.RLock()
+	defer s.followablesMu.RUnlock()
+	return append([]FollowableResource(nil), s.followables...)
 }
 
 // FollowFanoutHandler is the host-internal consumer of the follows.fanout queue.
@@ -79,7 +131,7 @@ func (s *Service) FollowFanoutHandler() jobs.Handler {
 
 func (s *Service) fanOutFollowNotifications(ctx context.Context, envelope *jobsv1.JobEnvelope) error {
 	eventType := envelope.GetTopic()
-	resourceType, declared := s.followableByEvent[eventType]
+	resourceType, declared := s.followableResourceType(eventType)
 	if !declared {
 		return nil
 	}
@@ -95,31 +147,84 @@ func (s *Service) fanOutFollowNotifications(ctx context.Context, envelope *jobsv
 			"follows.invalid_job", "follow fan-out job lacks event identity, subject, or tenant", false)
 	}
 
-	var followers []string
-	if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
-		var err error
-		followers, err = s.store.ListResourceFollowers(ctx, orgID, resourceType, resourceID)
-		return err
-	}); err != nil {
-		return err
-	}
-
-	for _, userID := range followers {
-		// A failure part-way through retries the whole job, re-delivering to the
-		// followers already written. The delivery key is what makes that converge
-		// on the rows that exist rather than duplicate them.
-		if err := s.deliverFollowNotification(ctx, followDelivery{
-			EventID:      eventID,
-			EventType:    eventType,
-			OrgID:        orgID,
-			UserID:       userID,
-			ResourceType: resourceType,
-			ResourceID:   resourceID,
+	// The follower set is walked one bounded page at a time, keyed on the last
+	// user id seen. A retry re-walks the pages, but the already-written
+	// recipients are filtered out of each one, so the cost of an attempt is
+	// proportional to the work left rather than to the whole set.
+	cursor := ""
+	for {
+		var page []string
+		if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
+			var err error
+			page, err = s.store.ListResourceFollowers(
+				ctx, orgID, resourceType, resourceID, cursor, followFanoutPageSize)
+			return err
 		}); err != nil {
 			return err
 		}
+		if len(page) == 0 {
+			return nil
+		}
+		pending, err := s.undeliveredFollowers(ctx, eventID, resourceType, resourceID, page)
+		if err != nil {
+			return err
+		}
+		for _, userID := range pending {
+			if err := s.deliverFollowNotification(ctx, followDelivery{
+				EventID:      eventID,
+				EventType:    eventType,
+				OrgID:        orgID,
+				UserID:       userID,
+				ResourceType: resourceType,
+				ResourceID:   resourceID,
+			}); err != nil {
+				return err
+			}
+		}
+		if len(page) < followFanoutPageSize {
+			return nil
+		}
+		cursor = page[len(page)-1]
 	}
-	return nil
+}
+
+// undeliveredFollowers drops the recipients an earlier attempt already wrote.
+// The notification id is derived from the delivery key, so the row's presence is
+// the durable record of that work — no separate progress state is needed, and
+// the filter cannot disagree with what the write path would converge on.
+//
+// This skips work, and decides nothing. A follower whose item was suppressed by
+// preference has no row to find, so a retry re-evaluates them and reaches the
+// same decision; a follower who deleted the item has no row either, so a replay
+// writes it again exactly as it did before this filter existed. Suppression
+// remains the job of the follow and preference reads inside the writing
+// transaction.
+func (s *Service) undeliveredFollowers(
+	ctx context.Context, eventID, resourceType, resourceID string, page []string,
+) ([]string, error) {
+	ids := make([]string, 0, len(page))
+	userByID := make(map[string]string, len(page))
+	for _, userID := range page {
+		id := notificationIDForKey(followDeliveryKey(
+			eventID, resourceType, resourceID, userID, NotificationChannelInApp))
+		ids = append(ids, id)
+		userByID[id] = userID
+	}
+	var existing map[string]struct{}
+	if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
+		var err error
+		existing, err = s.store.ExistingNotificationIDs(ctx, ids)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	pending := make([]string, 0, len(page))
+	for _, id := range ids {
+		if _, delivered := existing[id]; !delivered {
+			pending = append(pending, userByID[id])
+		}
+	}
+	return pending, nil
 }
 
 // followDelivery is one candidate delivery: one committed change, one resource,
@@ -206,12 +311,18 @@ func (s *Service) deliverFollowNotification(ctx context.Context, delivery follow
 //
 // Hashing is what keeps the key in bounds: a resource id is an opaque
 // module-chosen string with no length limit of its own, and idempotency_key is
-// capped at 255 characters. The parts are joined on NUL, which a PostgreSQL TEXT
-// value cannot contain, so two distinct tuples can never render to one input.
+// capped at 255 characters.
+//
+// Each part is length-prefixed rather than joined on a separator. resource_id is
+// the envelope subject — an arbitrary module-supplied string that has never been
+// through PostgreSQL — so no byte can be assumed absent from it, and a separator
+// appearing inside a part would let two distinct tuples render to one preimage.
 func followDeliveryKey(eventID, resourceType, resourceID, userID string, channel NotificationChannel) string {
-	digest := sha256.Sum256([]byte(strings.Join(
-		[]string{eventID, resourceType, resourceID, userID, string(channel)}, "\x00")))
-	return "follow:" + hex.EncodeToString(digest[:])
+	digest := sha256.New()
+	for _, part := range []string{eventID, resourceType, resourceID, userID, string(channel)} {
+		fmt.Fprintf(digest, "%d:%s", len(part), part)
+	}
+	return "follow:" + hex.EncodeToString(digest.Sum(nil))
 }
 
 // MaterializeFollowSubscriptions creates the host's own subscriptions over every
@@ -232,8 +343,10 @@ func followDeliveryKey(eventID, resourceType, resourceID, userID string, channel
 func (s *Service) MaterializeFollowSubscriptions(ctx context.Context) error {
 	w := wool.Get(ctx).In("MaterializeFollowSubscriptions")
 	principal := ModulePrincipalID(followSubscriberPrefix)
-	for _, declared := range s.followables {
+	declaredTypes := map[string]struct{}{}
+	for _, declared := range s.declaredFollowables() {
 		for _, eventType := range declared.Events {
+			declaredTypes[eventType] = struct{}{}
 			if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
 				sub, inserted, err := s.store.CreateEventSubscription(ctx, &EventSubscription{
 					SubscriberPrincipalID: principal,
@@ -258,6 +371,50 @@ func (s *Service) MaterializeFollowSubscriptions(ctx context.Context) error {
 			}); err != nil {
 				return w.Wrapf(err, "cannot materialize follow subscription for %q", eventType)
 			}
+		}
+	}
+	return s.revokeUndeclaredFollowSubscriptions(ctx, principal, declaredTypes)
+}
+
+// revokeUndeclaredFollowSubscriptions retires the host's subscriptions whose
+// type is no longer declared followable. Materialization would otherwise only
+// ever insert: withdrawing a `follows:` entry, or renaming an event type, would
+// leave the old row live and the relay would go on enqueueing a job per publish
+// forever, each one acknowledged as a no-op because the type resolves to no
+// followable resource. It only ever touches rows on the follow queue, so a
+// subscription the host holds for any other reason is out of its reach.
+func (s *Service) revokeUndeclaredFollowSubscriptions(
+	ctx context.Context, principal string, declaredTypes map[string]struct{},
+) error {
+	w := wool.Get(ctx).In("revokeUndeclaredFollowSubscriptions")
+	var live []*EventSubscription
+	if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
+		var err error
+		live, err = s.store.ListEventSubscriptions(ctx, principal)
+		return err
+	}); err != nil {
+		return w.Wrapf(err, "cannot read host follow subscriptions")
+	}
+	for _, sub := range live {
+		if sub.Queue != FollowFanoutQueue {
+			continue
+		}
+		if _, declared := declaredTypes[sub.TypePattern]; declared {
+			continue
+		}
+		if err := s.store.WithControlPlane(ctx, func(ctx context.Context) error {
+			revoked, err := s.store.RevokeEventSubscription(ctx, sub.ID, principal)
+			if err != nil || !revoked {
+				return err
+			}
+			return s.emitTx(ctx, principal, "agent", EventEventSubscriptionRevoked,
+				"event_subscription", sub.ID, "", map[string]any{
+					"subscription_id": sub.ID,
+					"type_pattern":    sub.TypePattern,
+					"queue":           sub.Queue,
+				})
+		}); err != nil {
+			return w.Wrapf(err, "cannot revoke undeclared follow subscription for %q", sub.TypePattern)
 		}
 	}
 	return nil

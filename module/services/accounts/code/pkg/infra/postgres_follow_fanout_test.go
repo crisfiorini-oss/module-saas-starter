@@ -122,12 +122,72 @@ func TestListResourceFollowersSpansUsersAndExcludesRevoked(t *testing.T) {
 	var followers []string
 	require.NoError(t, testStore.WithControlPlane(testCtx, func(ctx context.Context) error {
 		var err error
-		followers, err = testStore.ListResourceFollowers(ctx, orgID, "doc", "doc-1")
+		followers, err = testStore.ListResourceFollowers(ctx, orgID, "doc", "doc-1", "", 100)
 		return err
 	}))
 
 	require.Equal(t, []string{first}, followers,
 		"a revoked follow is not a follower, and another instance's follower is not this one's")
+}
+
+// The follower scan is paged because nothing bounds how many people follow one
+// instance. The cursor must be a total order over the page, or a fan-out would
+// skip or repeat followers between pages.
+func TestListResourceFollowersPagesWithoutSkippingOrRepeating(t *testing.T) {
+	owner, orgID := followFixture(t)
+	users := []string{owner}
+	for i := 0; i < 3; i++ {
+		u := seedUser(t)
+		seedOrgMember(t, orgID, u)
+		users = append(users, u)
+	}
+	for _, u := range users {
+		follow(t, u, orgID, "doc", "paged-1")
+	}
+
+	page := func(after string, limit int) []string {
+		var got []string
+		require.NoError(t, testStore.WithControlPlane(testCtx, func(ctx context.Context) error {
+			var err error
+			got, err = testStore.ListResourceFollowers(ctx, orgID, "doc", "paged-1", after, limit)
+			return err
+		}))
+		return got
+	}
+
+	var walked []string
+	cursor := ""
+	for {
+		got := page(cursor, 2)
+		require.LessOrEqual(t, len(got), 2, "a page never exceeds its limit")
+		if len(got) == 0 {
+			break
+		}
+		walked = append(walked, got...)
+		cursor = got[len(got)-1]
+	}
+
+	require.ElementsMatch(t, users, walked, "every follower is visited exactly once across pages")
+	require.Len(t, walked, len(users))
+}
+
+// The fan-out skips recipients an earlier attempt already wrote, and derives
+// their row ids from the delivery key. This is the lookup that decides it.
+func TestExistingNotificationIDsReportsOnlyRowsThatExist(t *testing.T) {
+	userID, orgID := followFixture(t)
+	present := business.NewIDString()
+	absent := business.NewIDString()
+	require.NoError(t, seedFollowNotification(t, userID, orgID, present, "doc", "doc-1"))
+
+	var existing map[string]struct{}
+	require.NoError(t, testStore.WithControlPlane(testCtx, func(ctx context.Context) error {
+		var err error
+		existing, err = testStore.ExistingNotificationIDs(ctx, []string{present, absent})
+		return err
+	}))
+
+	require.Contains(t, existing, present)
+	require.NotContains(t, existing, absent)
 }
 
 // The in-transaction re-read is what makes a follow revoked before it suppress
