@@ -39,6 +39,29 @@ services:
     endpoints: [grpc]
   - name: vault
     endpoints: [http]
+fixtures:
+  - name: dev-admin
+    description: Acme tenant seeded with an administrator, members, teams and a shared collection
+    principals:
+      - id: 00000000-0000-7000-8000-0000000000a1
+        email: admin@acme.com
+        role: super_admin
+        token: dev-admin
+      - id: 00000000-0000-7000-8000-0000000000a2
+        email: alice@acme.com
+        role: admin
+        token: dev-alice
+      - id: 00000000-0000-7000-8000-0000000000a3
+        email: bob@acme.com
+        role: member
+        token: dev-bob
+  - name: simple
+    description: Single super administrator with no tenant
+    principals:
+      - id: 00000000-0000-7000-8000-0000000000b1
+        email: admin@example.com
+        role: super_admin
+        token: local-admin
 contracts:
   composition: ">=2.0.0 <3.0.0"
   frontendPlugin: ">=1.0.0 <2.0.0"

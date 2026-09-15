@@ -1,6 +1,6 @@
 {
   "note": "Base-file integrity manifest for the saas-starter module. Generated FROM canonical by `node tools/base-integrity.mjs gen`. Consumers MUST NOT hand-edit base files — only add files on the side. Regenerated on every codefly sync from canonical.",
-  "fileCount": 2499,
+  "fileCount": 2500,
   "files": {
     "AUDIT_METRICS.md": "ad6279f6e9519075e2cb9174beb680423387bc33f4fada58b2d42f1b61be8b79",
     "AUTHORIZATION_CATALOG.md": "28d0b238a637c8c27e1e5d1e88fef868f57a92f0f566c4e17c2d6f8b119025d5",
@@ -171,7 +171,7 @@
     "generated/reference-composition/services/accounts/proto/saas/composed/settings/v1/settings.proto": "9629c2f0a1ec6ed638784b23a99978bf7c71bbaa1c8ee29e2decaab273e933af",
     "generated/reference-composition/services/frontend/code/src/gen/saas/settings/v1/field_catalog.ts": "83ad42f05c7c2a4359fc18a1fd8f7e56961bbdd65f50ad98810608d88c6ae30f",
     "generated/reference-composition/services/frontend/code/src/generated/frontend-contributions.ts": "057360f7883f3d02d9a313432297bfeb76182ffc1f9b9f4932a9e9254428995e",
-    "module.package.codefly.yaml": "149816c96bf523740e92fe9948e1d740f86c655ce640ec597fdd396c64d37548",
+    "module.package.codefly.yaml": "3e29ed34acbdac128a7bab4dfb857f4ba2861a5cc1a77b9aad042659de3a7eb5",
     "policies/method_permissions/data.json": "b7dcfa74a0d3614a59054c2f63a52406f9a44aba5f5a9c04844ddc209384946b",
     "public/site.config.json": "4a6e76802a6ac46298b0f8ce7fbbb687ca670f1259474f4a8b32c335937916f1",
     "services/README.md": "34d7ac4be959ce756ae67946f3b8b6479ac472b6cbbf8ebd33015eb0ff9ca244",
@@ -2465,6 +2465,7 @@
     "tools/composition/composition_events_hardening_test.go": "dd8c76b4a7cc60ccc0defded9739cec89f2c2e7f3d5460c3f3c76067130bdb47",
     "tools/composition/composition_events_test.go": "e2651c7eda76c4ea0cd5ddca5a2523cd84f8dd2de16e9407991e8fa8f35d4b1d",
     "tools/composition/composition_test.go": "0179cb5c6e833cab00c67b6ac0db7e6e809ccc7477bd8ffa589ffa708a45ee50",
+    "tools/composition/fixtures_test.go": "e45d09d30c7021ba72c6b10b5236c368aa3b24b00e0d2e29168e0374a9bc9855",
     "tools/database_authority_inventory_parse_test.go": "d5b25bdf8e7a22dd383746deafc31aa9773ac327abae753a318459aa93d06719",
     "tools/database_authority_inventory_test.go": "ce2ab00a7e67427bd5fb602b1e2fa1ae2ea37b4abfb10088e85374251e8061dd",
     "tools/generate-public-config.mjs": "30728d543f12933939bb59277aef1e8d812ec0b1b1b7d19172600c7625fa47a7",
