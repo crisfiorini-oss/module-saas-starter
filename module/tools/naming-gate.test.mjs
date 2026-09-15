@@ -402,6 +402,30 @@ test("records exits non-zero on a forbidden name, printing neither the term nor 
   });
 });
 
+test("only the pull request's own commits are scanned, not the base branch's", () => {
+  // A pull_request build checks out the MERGE of the branch into the CURRENT base, while the base
+  // sha is the base as of the last sync. A range ending at that merge sweeps in every commit that
+  // landed on the base branch since — other authors' messages, already merged and already public,
+  // which this pull request cannot fix and must not be failed for.
+  withRepo((root) => {
+    const fork = git(root, ["rev-parse", "HEAD"]).trim();
+    git(root, ["checkout", "-q", "-b", "feature"]);
+    git(root, ["commit", "-q", "--allow-empty", "-m", "feat: clean work"]);
+    const head = git(root, ["rev-parse", "HEAD"]).trim();
+
+    git(root, ["checkout", "-q", fork]);
+    git(root, ["commit", "-q", "--allow-empty", "-m", "chore: another author\n\nRequested by ZorpCo."]);
+    git(root, ["merge", "-q", "--no-ff", "-m", "Merge feature", "feature"]);
+    const mergeRef = git(root, ["rev-parse", "HEAD"]).trim();
+
+    // Ending the range at the merge blames this pull request for the other author's message.
+    assert.equal(cli(root, ["records", fork, mergeRef]).status, 1);
+    // Ending it at the pull request's own head does not.
+    const own = cli(root, ["records", fork, head]);
+    assert.equal(own.status, 0, own.stdout + own.stderr);
+  });
+});
+
 test("a record separator inside a commit message cannot truncate the scan", () => {
   // A literal \x1e used to terminate the record early: everything after it went unscanned while
   // the run still reported a clean count. NUL is the only byte a commit message cannot contain.

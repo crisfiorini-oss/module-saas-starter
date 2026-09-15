@@ -106,7 +106,11 @@ jobs:
           NAMING_PR_TITLE: ${{ github.event.pull_request.title }}
           NAMING_PR_BODY: ${{ github.event.pull_request.body }}
           NAMING_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-        run: node module/tools/naming-gate.mjs records "$NAMING_BASE"
+          # The pull request's own head, never the checked-out HEAD: this build checks out the
+          # merge of the branch into the CURRENT base, so a range ending at HEAD would also sweep
+          # in every commit that landed on the base branch since the last sync.
+          NAMING_HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        run: node module/tools/naming-gate.mjs records "$NAMING_BASE" "$NAMING_HEAD"
 
   authz-coverage:
     name: Authorization coverage

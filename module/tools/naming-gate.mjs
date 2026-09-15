@@ -15,7 +15,7 @@
 // the rule dozens of times. This repository is public. Zero-tolerance.
 //
 //   node tools/naming-gate.mjs check          # fail on any real name in content or filenames
-//   node tools/naming-gate.mjs records <base> # ... in the pull request and in <base>..HEAD
+//   node tools/naming-gate.mjs records <base> [head]  # ... in the pull request and its commits
 //   node tools/naming-gate.mjs message <file> # ... in one commit message (the commit-msg hook)
 //   node tools/naming-gate.mjs hash <term>    # compute the digest for a new naming-terms entry
 //
@@ -360,7 +360,8 @@ export function commitMessageBody(raw) {
 // that cannot occur inside the message — git refuses it in a commit object — whereas a message may
 // legally carry any other control byte. A literal \x1e in a body used to end a record early, and
 // everything after it went unscanned while the run still reported a clean count.
-function commitEntries(base) {
+function commitEntries(base, head) {
+  const range = `${base}..${head}`;
   const git = (args) => {
     try {
       return execFileSync("git", args, {
@@ -369,12 +370,12 @@ function commitEntries(base) {
         stdio: ["ignore", "pipe", "inherit"],
       });
     } catch {
-      console.error(`naming-gate: cannot read commits in ${base}..HEAD`);
+      console.error(`naming-gate: cannot read commits in ${range}`);
       process.exit(1);
     }
   };
 
-  const entries = git(["log", "--format=%H%x1f%B%x00", `${base}..HEAD`])
+  const entries = git(["log", "--format=%H%x1f%B%x00", range])
     .split("\0")
     .filter((record) => record.includes("\x1f"))
     .map((record) => {
@@ -384,10 +385,10 @@ function commitEntries(base) {
 
   // Coverage is asserted, never assumed: if parsing ever loses a commit, fail loudly instead of
   // reporting a clean scan of fewer records than the range actually holds.
-  const expected = Number(git(["rev-list", "--count", `${base}..HEAD`]).trim());
+  const expected = Number(git(["rev-list", "--count", range]).trim());
   if (entries.length !== expected) {
     console.error(
-      `naming-gate: parsed ${entries.length} commit message(s) but ${base}..HEAD holds ${expected}`,
+      `naming-gate: parsed ${entries.length} commit message(s) but ${range} holds ${expected}`,
     );
     process.exit(1);
   }
@@ -416,7 +417,13 @@ function reportRecords(errors, scanned) {
 // The pull request's own text arrives through the environment, never interpolated into a shell
 // command: it is attacker-controlled. It is absent on a merge-queue entry, where only the commits
 // remain to check.
-function records(base) {
+//
+// `head` must be the pull request's OWN head, never the checked-out HEAD. A pull_request build
+// checks out the merge of the branch into the CURRENT base, while `base` is the base as of the
+// last sync, so a range ending at HEAD sweeps in every commit that has landed on the base branch
+// since — other authors' messages, which this pull request cannot fix and which are already
+// merged and public.
+function records(base, head) {
   const entries = [];
   for (const [label, text] of [
     ["pull request title", process.env.NAMING_PR_TITLE],
@@ -424,14 +431,14 @@ function records(base) {
   ]) {
     if (text) entries.push({ label, text });
   }
-  entries.push(...commitEntries(base));
+  entries.push(...commitEntries(base, head));
   // A run that scanned nothing is not a pass. Without this, a base ref that resolves to HEAD (or
   // an event with no title, body or commits) prints a tick and exits 0 — a gate that has quietly
   // stopped covering anything, which is the one failure mode nobody goes looking for.
   if (!entries.length) {
     console.error(
       `naming-gate: nothing to scan — no pull request title or body in the environment, and no ` +
-        `commits in ${base}..HEAD. Reporting success here would mean the gate covered nothing.`,
+        `commits in ${base}..${head}. Reporting success here would mean the gate covered nothing.`,
     );
     process.exit(1);
   }
@@ -479,10 +486,13 @@ if (process.argv[1] && realPath(process.argv[1]) === realPath(SCRIPT_PATH)) {
   else if (cmd === "records" || cmd === "message") {
     const argument = process.argv[3];
     if (!argument) {
-      console.error(`usage: naming-gate.mjs ${cmd} <${cmd === "records" ? "base-ref" : "message-file"}>`);
+      console.error(
+        `usage: naming-gate.mjs ${cmd} ` +
+          `<${cmd === "records" ? "base-ref> [head-ref]" : "message-file>"}`,
+      );
       process.exit(2);
     }
-    if (cmd === "records") records(argument);
+    if (cmd === "records") records(argument, process.argv[4] || "HEAD");
     else message(argument);
   } else if (cmd === "hash") {
     const term = process.argv[3];

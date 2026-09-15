@@ -44,4 +44,6 @@ jobs:
           NAMING_PR_TITLE: ${{ github.event.pull_request.title }}
           NAMING_PR_BODY: ${{ github.event.pull_request.body }}
           NAMING_BASE: ${{ github.event.pull_request.base.sha }}
-        run: node module/tools/naming-gate.mjs records "$NAMING_BASE"
+          # The pull request's own head, never the checked-out HEAD — see ci.yml.
+          NAMING_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node module/tools/naming-gate.mjs records "$NAMING_BASE" "$NAMING_HEAD"
