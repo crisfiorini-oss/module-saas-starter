@@ -2,7 +2,7 @@
 
 > Generated from protobuf service descriptors and `saas.policy.v1.method_policy`; only the prose description is joined from `pkg/business/introspection.go`. Do not edit by hand. Run `go generate ./pkg/business` from `module/services/accounts/code`.
 
-Inventory: **200 RPCs** across **32 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
+Inventory: **201 RPCs** across **32 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
 
 The compact tier is retained for compatibility. Guards, resource bindings, audit events, limiter class, and data sensitivity are descriptor-authoritative. Domain handlers may enforce stronger state-dependent rules but may not weaken this floor.
 
@@ -88,6 +88,7 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 | `/saas.accounts.v1.ModuleCapabilitiesService/MintSolutionRegistration` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | SUCCESS: saas.solution.registration_minted | FORBIDDEN / INTERNAL | SECRET → SECRET | Issue a solution the signed credential it registers its gateway upstream and frontend remote with. |
 | `/saas.accounts.v1.ModuleCapabilitiesService/NackJob` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Fail a leased job as retryable or permanent. |
 | `/saas.accounts.v1.ModuleCapabilitiesService/NotifyUser` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Notify a user subject to category policy. |
+| `/saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Place one of the caller's own records at a scope node. |
 | `/saas.accounts.v1.ModuleCapabilitiesService/PublishEvent` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Publish one domain event to the outbox for the caller's tenant. |
 | `/saas.accounts.v1.ModuleCapabilitiesService/ReplayEvents` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Re-deliver durable events to the caller's own subscriptions. |
 | `/saas.accounts.v1.ModuleCapabilitiesService/RequestApproval` | unary | `—` | `internal` | exposure=INTERNAL; tenant=NONE | — | — | — | FORBIDDEN / INTERNAL | CONFIDENTIAL → CONFIDENTIAL | Open a pending approval whose resume job the module claims. |
@@ -212,7 +213,7 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 ## Tier totals
 
 - `auth`: 39
-- `internal`: 38
+- `internal`: 39
 - `mfa`: 3
 - `org_admin`: 41
 - `org_member`: 39

@@ -10,7 +10,7 @@
       "kind": "protobuf",
       "package": "saas.accounts.v1",
       "path": "contracts/api/accounts/connect/contract.binpb",
-      "digest": "sha256:3d57a862202d1eb305fde7958c38f5bcd38e033b262ffcecd95c95ccfdf05c63",
+      "digest": "sha256:268c89f52af92ed9c0f41cad67a7017e06a009e91a9d34374ac0ed159b80114f",
       "services": [
         {
           "name": "APIKeyService",
@@ -186,6 +186,7 @@
             "/saas.accounts.v1.ModuleCapabilitiesService/MintSolutionRegistration",
             "/saas.accounts.v1.ModuleCapabilitiesService/NackJob",
             "/saas.accounts.v1.ModuleCapabilitiesService/NotifyUser",
+            "/saas.accounts.v1.ModuleCapabilitiesService/PlaceRecord",
             "/saas.accounts.v1.ModuleCapabilitiesService/PublishEvent",
             "/saas.accounts.v1.ModuleCapabilitiesService/ReplayEvents",
             "/saas.accounts.v1.ModuleCapabilitiesService/RequestApproval",
