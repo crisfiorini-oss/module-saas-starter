@@ -292,10 +292,13 @@ SDK. See the solution repo for its own instructions.
   [RELEASE_GATES.md § Repository-specific
   gates](./RELEASE_GATES.md#repository-specific-gates), which
   `release-gates.test.mjs` holds to the enforced set.
-- Inside the `base-integrity` job, five more checks run as steps rather than as
+- Inside the `base-integrity` job, these checks run as steps rather than as
   gates of their own: tenant RLS coverage, migration up/down pairing, pinned
   plugin versions on generated Go, generic placeholder names, and commit
-  identity. The last two enforce §"Naming and confidentiality" above — the first
+  identity. The list is deliberately not preceded by a count: nothing enforces
+  one, so two changes that each add a step and each bump the same number merge
+  cleanly into a total that is silently wrong. The last two enforce
+  §"Naming and confidentiality" above — the first
   across every file's contents and path, the second across the author and
   committer email of every commit a pull request adds, which the tree scan
   cannot see and no scrub can reach:

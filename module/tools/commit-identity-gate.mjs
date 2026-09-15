@@ -3,11 +3,12 @@
 //
 // The naming gate scans the tree. A commit carries two fields it never reads: the author and
 // committer email. Those leaked the same consumer domain the tree forbids, across 506 of the 865
-// commits on `main` — and unlike a file, they cannot be scrubbed. Author and committer are part
-// of the commit object, so changing one rewrites every descendant hash: it breaks every clone,
-// fork and open pull request, and GitHub keeps serving the original objects until a Support
-// request garbage-collects them. Rewriting is a disclosure decision, deliberately not taken here
-// (CLAIM_INVENTORY.md records it). This gate is the other half — it stops the count growing.
+// commits on `main` as of 2026-09-14 — a measurement taken then, not a running total — and unlike
+// a file, they cannot be scrubbed. Author and committer are part of the commit object, so changing
+// one rewrites every descendant hash: it breaks every clone, fork and open pull request, and
+// GitHub keeps serving the original objects until a Support request garbage-collects them.
+// Rewriting is a disclosure decision, deliberately not taken here (CLAIM_INVENTORY.md records it).
+// This gate is the other half — it stops the count growing.
 //
 //   node tools/commit-identity-gate.mjs check <base> [head]   # every commit in <base>..<head>
 //

@@ -491,7 +491,8 @@ must run here rather than in a consumer copy — the same reason every job in
 
 The naming gate below scans the tree. A commit carries two fields it never
 reads — the **author** and **committer** email — and those leaked the same
-consumer domain the tree forbids, across 506 of the 865 commits on `main`.
+consumer domain the tree forbids, across 506 of the 865 commits on `main` as of
+2026-09-14 — a measurement taken then rather than a running total.
 
 Unlike a file, they cannot be scrubbed. Both are part of the commit object, so
 changing one rewrites every descendant hash: it breaks every clone, fork and
