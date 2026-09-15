@@ -30,6 +30,16 @@ export function NotificationsPage() {
 		onError: () => toast.error("Failed to mark all as read"),
 	});
 
+	const resolveActionMutation = useMutation({
+		mutationFn: (id: string) => notificationMutations.resolveAction(id),
+		onSuccess: (actionUrl) => {
+			if (actionUrl) {
+				router.push(actionUrl);
+			}
+		},
+		onError: () => toast.error("This notification is no longer available"),
+	});
+
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => notificationMutations.delete(id),
 		onSuccess: () => {
@@ -84,7 +94,7 @@ export function NotificationsPage() {
 											markReadMutation.mutate(notification.id);
 										}
 										if (notification.actionUrl) {
-											router.push(notification.actionUrl);
+											resolveActionMutation.mutate(notification.id);
 										}
 									}}
 								>

@@ -443,6 +443,101 @@ func (x *DeleteNotificationRequest) GetId() string {
 	return ""
 }
 
+// ResolveNotificationActionRequest names the notification whose deep link is
+// being followed. The follower is always the authenticated caller, so the
+// request carries no subject.
+type ResolveNotificationActionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveNotificationActionRequest) Reset() {
+	*x = ResolveNotificationActionRequest{}
+	mi := &file_saas_accounts_v1_notifications_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveNotificationActionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveNotificationActionRequest) ProtoMessage() {}
+
+func (x *ResolveNotificationActionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_notifications_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveNotificationActionRequest.ProtoReflect.Descriptor instead.
+func (*ResolveNotificationActionRequest) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_notifications_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ResolveNotificationActionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+// ResolveNotificationActionResponse carries the destination to open. A
+// notification the caller may no longer reach is reported as missing rather
+// than denied, so following a link cannot become an existence oracle for a
+// resource whose grant was revoked.
+type ResolveNotificationActionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActionUrl     string                 `protobuf:"bytes,1,opt,name=action_url,json=actionUrl,proto3" json:"action_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveNotificationActionResponse) Reset() {
+	*x = ResolveNotificationActionResponse{}
+	mi := &file_saas_accounts_v1_notifications_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveNotificationActionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveNotificationActionResponse) ProtoMessage() {}
+
+func (x *ResolveNotificationActionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_saas_accounts_v1_notifications_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveNotificationActionResponse.ProtoReflect.Descriptor instead.
+func (*ResolveNotificationActionResponse) Descriptor() ([]byte, []int) {
+	return file_saas_accounts_v1_notifications_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ResolveNotificationActionResponse) GetActionUrl() string {
+	if x != nil {
+		return x.ActionUrl
+	}
+	return ""
+}
+
 var File_saas_accounts_v1_notifications_proto protoreflect.FileDescriptor
 
 const file_saas_accounts_v1_notifications_proto_rawDesc = "" +
@@ -474,13 +569,19 @@ const file_saas_accounts_v1_notifications_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"!\n" +
 	"\x1fMarkAllNotificationsReadRequest\"5\n" +
 	"\x19DeleteNotificationRequest\x12\x18\n" +
-	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id2\x9f\x06\n" +
+	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"<\n" +
+	" ResolveNotificationActionRequest\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"B\n" +
+	"!ResolveNotificationActionResponse\x12\x1d\n" +
+	"\n" +
+	"action_url\x18\x01 \x01(\tR\tactionUrl2\xc0\a\n" +
 	"\x13NotificationService\x12\x9f\x01\n" +
 	"\x11ListNotifications\x12*.saas.accounts.v1.ListNotificationsRequest\x1a+.saas.accounts.v1.ListNotificationsResponse\"1\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x03P\x03X\x03`\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/notifications\x12\xa3\x01\n" +
 	"\x0eGetUnreadCount\x12'.saas.accounts.v1.GetUnreadCountRequest\x1a(.saas.accounts.v1.GetUnreadCountResponse\">\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x03P\x03X\x03`\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/notifications/unread-count\x12\x91\x01\n" +
 	"\bMarkRead\x12-.saas.accounts.v1.MarkNotificationReadRequest\x1a\x16.google.protobuf.Empty\">\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x04P\x03X\x03`\x01\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/notifications/{id}:read\x12\x97\x01\n" +
 	"\vMarkAllRead\x121.saas.accounts.v1.MarkAllNotificationsReadRequest\x1a\x16.google.protobuf.Empty\"=\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x04P\x03X\x03`\x01\x82\xd3\xe4\x93\x02\x1f:\x01*\"\x1a/v1/notifications:read-all\x12\x91\x01\n" +
-	"\x12DeleteNotification\x12+.saas.accounts.v1.DeleteNotificationRequest\x1a\x16.google.protobuf.Empty\"6\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x04P\x03X\x03`\x01\x82\xd3\xe4\x93\x02\x18*\x16/v1/notifications/{id}B\xba\x01\n" +
+	"\x12DeleteNotification\x12+.saas.accounts.v1.DeleteNotificationRequest\x1a\x16.google.protobuf.Empty\"6\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x04P\x03X\x03`\x01\x82\xd3\xe4\x93\x02\x18*\x16/v1/notifications/{id}\x12\x9e\x01\n" +
+	"\x19ResolveNotificationAction\x122.saas.accounts.v1.ResolveNotificationActionRequest\x1a3.saas.accounts.v1.ResolveNotificationActionResponse\"\x18\xc2\xf3\x18\x14\b\x02\x10\x020\x01:\x02\x10\x01@\x01H\x03P\x03X\x03`\x01B\xba\x01\n" +
 	"\x14com.saas.accounts.v1B\x12NotificationsProtoP\x01Z,accounts/pkg/gen/saas/accounts/v1;accountsv1\xa2\x02\x03SAX\xaa\x02\x10Saas.Accounts.V1\xca\x02\x10Saas\\Accounts\\V1\xe2\x02\x1cSaas\\Accounts\\V1\\GPBMetadata\xea\x02\x12Saas::Accounts::V1b\x06proto3"
 
 var (
@@ -495,38 +596,42 @@ func file_saas_accounts_v1_notifications_proto_rawDescGZIP() []byte {
 	return file_saas_accounts_v1_notifications_proto_rawDescData
 }
 
-var file_saas_accounts_v1_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_saas_accounts_v1_notifications_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_saas_accounts_v1_notifications_proto_goTypes = []any{
-	(*Notification)(nil),                    // 0: saas.accounts.v1.Notification
-	(*ListNotificationsRequest)(nil),        // 1: saas.accounts.v1.ListNotificationsRequest
-	(*ListNotificationsResponse)(nil),       // 2: saas.accounts.v1.ListNotificationsResponse
-	(*GetUnreadCountRequest)(nil),           // 3: saas.accounts.v1.GetUnreadCountRequest
-	(*GetUnreadCountResponse)(nil),          // 4: saas.accounts.v1.GetUnreadCountResponse
-	(*MarkNotificationReadRequest)(nil),     // 5: saas.accounts.v1.MarkNotificationReadRequest
-	(*MarkAllNotificationsReadRequest)(nil), // 6: saas.accounts.v1.MarkAllNotificationsReadRequest
-	(*DeleteNotificationRequest)(nil),       // 7: saas.accounts.v1.DeleteNotificationRequest
-	(*timestamppb.Timestamp)(nil),           // 8: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                   // 9: google.protobuf.Empty
+	(*Notification)(nil),                      // 0: saas.accounts.v1.Notification
+	(*ListNotificationsRequest)(nil),          // 1: saas.accounts.v1.ListNotificationsRequest
+	(*ListNotificationsResponse)(nil),         // 2: saas.accounts.v1.ListNotificationsResponse
+	(*GetUnreadCountRequest)(nil),             // 3: saas.accounts.v1.GetUnreadCountRequest
+	(*GetUnreadCountResponse)(nil),            // 4: saas.accounts.v1.GetUnreadCountResponse
+	(*MarkNotificationReadRequest)(nil),       // 5: saas.accounts.v1.MarkNotificationReadRequest
+	(*MarkAllNotificationsReadRequest)(nil),   // 6: saas.accounts.v1.MarkAllNotificationsReadRequest
+	(*DeleteNotificationRequest)(nil),         // 7: saas.accounts.v1.DeleteNotificationRequest
+	(*ResolveNotificationActionRequest)(nil),  // 8: saas.accounts.v1.ResolveNotificationActionRequest
+	(*ResolveNotificationActionResponse)(nil), // 9: saas.accounts.v1.ResolveNotificationActionResponse
+	(*timestamppb.Timestamp)(nil),             // 10: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                     // 11: google.protobuf.Empty
 }
 var file_saas_accounts_v1_notifications_proto_depIdxs = []int32{
-	8, // 0: saas.accounts.v1.Notification.read_at:type_name -> google.protobuf.Timestamp
-	8, // 1: saas.accounts.v1.Notification.created_at:type_name -> google.protobuf.Timestamp
-	0, // 2: saas.accounts.v1.ListNotificationsResponse.notifications:type_name -> saas.accounts.v1.Notification
-	1, // 3: saas.accounts.v1.NotificationService.ListNotifications:input_type -> saas.accounts.v1.ListNotificationsRequest
-	3, // 4: saas.accounts.v1.NotificationService.GetUnreadCount:input_type -> saas.accounts.v1.GetUnreadCountRequest
-	5, // 5: saas.accounts.v1.NotificationService.MarkRead:input_type -> saas.accounts.v1.MarkNotificationReadRequest
-	6, // 6: saas.accounts.v1.NotificationService.MarkAllRead:input_type -> saas.accounts.v1.MarkAllNotificationsReadRequest
-	7, // 7: saas.accounts.v1.NotificationService.DeleteNotification:input_type -> saas.accounts.v1.DeleteNotificationRequest
-	2, // 8: saas.accounts.v1.NotificationService.ListNotifications:output_type -> saas.accounts.v1.ListNotificationsResponse
-	4, // 9: saas.accounts.v1.NotificationService.GetUnreadCount:output_type -> saas.accounts.v1.GetUnreadCountResponse
-	9, // 10: saas.accounts.v1.NotificationService.MarkRead:output_type -> google.protobuf.Empty
-	9, // 11: saas.accounts.v1.NotificationService.MarkAllRead:output_type -> google.protobuf.Empty
-	9, // 12: saas.accounts.v1.NotificationService.DeleteNotification:output_type -> google.protobuf.Empty
-	8, // [8:13] is the sub-list for method output_type
-	3, // [3:8] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	10, // 0: saas.accounts.v1.Notification.read_at:type_name -> google.protobuf.Timestamp
+	10, // 1: saas.accounts.v1.Notification.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 2: saas.accounts.v1.ListNotificationsResponse.notifications:type_name -> saas.accounts.v1.Notification
+	1,  // 3: saas.accounts.v1.NotificationService.ListNotifications:input_type -> saas.accounts.v1.ListNotificationsRequest
+	3,  // 4: saas.accounts.v1.NotificationService.GetUnreadCount:input_type -> saas.accounts.v1.GetUnreadCountRequest
+	5,  // 5: saas.accounts.v1.NotificationService.MarkRead:input_type -> saas.accounts.v1.MarkNotificationReadRequest
+	6,  // 6: saas.accounts.v1.NotificationService.MarkAllRead:input_type -> saas.accounts.v1.MarkAllNotificationsReadRequest
+	7,  // 7: saas.accounts.v1.NotificationService.DeleteNotification:input_type -> saas.accounts.v1.DeleteNotificationRequest
+	8,  // 8: saas.accounts.v1.NotificationService.ResolveNotificationAction:input_type -> saas.accounts.v1.ResolveNotificationActionRequest
+	2,  // 9: saas.accounts.v1.NotificationService.ListNotifications:output_type -> saas.accounts.v1.ListNotificationsResponse
+	4,  // 10: saas.accounts.v1.NotificationService.GetUnreadCount:output_type -> saas.accounts.v1.GetUnreadCountResponse
+	11, // 11: saas.accounts.v1.NotificationService.MarkRead:output_type -> google.protobuf.Empty
+	11, // 12: saas.accounts.v1.NotificationService.MarkAllRead:output_type -> google.protobuf.Empty
+	11, // 13: saas.accounts.v1.NotificationService.DeleteNotification:output_type -> google.protobuf.Empty
+	9,  // 14: saas.accounts.v1.NotificationService.ResolveNotificationAction:output_type -> saas.accounts.v1.ResolveNotificationActionResponse
+	9,  // [9:15] is the sub-list for method output_type
+	3,  // [3:9] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_saas_accounts_v1_notifications_proto_init() }
@@ -540,7 +645,7 @@ func file_saas_accounts_v1_notifications_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_saas_accounts_v1_notifications_proto_rawDesc), len(file_saas_accounts_v1_notifications_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

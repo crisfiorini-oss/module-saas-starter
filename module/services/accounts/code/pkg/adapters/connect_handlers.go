@@ -929,6 +929,25 @@ func (h *notificationConnectHandler) DeleteNotification(ctx context.Context, req
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
+// ResolveNotificationAction re-authorizes a deep link as it is followed. A
+// notification the caller may no longer reach is NOT_FOUND, never denied, so an
+// id substitution and a revoked resource look the same from outside.
+func (h *notificationConnectHandler) ResolveNotificationAction(ctx context.Context, req *connect.Request[gen.ResolveNotificationActionRequest]) (*connect.Response[gen.ResolveNotificationActionResponse], error) {
+	ctx = connectCtx(ctx, req.Header())
+	userID, err := callerID(ctx)
+	if err != nil {
+		return nil, translateGRPCError(err)
+	}
+	actionURL, err := h.svc.ResolveNotificationAction(ctx, userID, req.Msg.Id)
+	if err != nil {
+		if errors.Is(err, business.ErrNotificationNotFound) {
+			return nil, connect.NewError(connect.CodeNotFound, err)
+		}
+		return nil, translateGRPCError(err)
+	}
+	return connect.NewResponse(&gen.ResolveNotificationActionResponse{ActionUrl: actionURL}), nil
+}
+
 // ============================================================================
 // ResourceFollowService — backed by business.Service.
 // Caller identity comes from auth headers; neither request carries a subject.

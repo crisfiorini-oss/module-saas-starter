@@ -547,6 +547,11 @@ type Store interface {
 	MarkNotificationRead(ctx context.Context, id string) error
 	MarkAllNotificationsRead(ctx context.Context, userID string) error
 	DeleteNotification(ctx context.Context, id string) error
+	// GetNotification reads one notification by id. Run under WithUserTx: the
+	// RLS policy on `notifications` is the access floor, so an id belonging to
+	// another user reads as absent rather than forbidden. Returns (nil, nil) on
+	// miss.
+	GetNotification(ctx context.Context, id string) (*Notification, error)
 	// GetNotificationUserID resolves notification.id → user_id.
 	// Called under WithControlPlane by Service methods that only have an
 	// id (MarkRead / DeleteNotification) and need to enter the

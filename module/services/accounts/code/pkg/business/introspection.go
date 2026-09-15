@@ -163,6 +163,7 @@ var rpcDescriptions = withWorkContextConsumerDescriptions(map[string]string{
 	"NotificationService/ListNotifications":                   "List the caller's notifications.",
 	"NotificationService/MarkAllRead":                         "Mark every one of the caller's notifications as read.",
 	"NotificationService/MarkRead":                            "Mark one of the caller's notifications as read.",
+	"NotificationService/ResolveNotificationAction":           "Re-authorize one of the caller's notification deep links and return its destination.",
 	"OnboardingService/CompleteStep":                          "Confirm a step only after its represented product state exists.",
 	"OnboardingService/GetProgress":                           "Versioned organization activation checklist for the caller.",
 	"OnboardingService/SkipStep":                              "Record an explicit skip for an optional step.",

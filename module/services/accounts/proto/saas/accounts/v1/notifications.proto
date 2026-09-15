@@ -53,6 +53,21 @@ message DeleteNotificationRequest {
   string id = 1 [(buf.validate.field).string.uuid = true];
 }
 
+// ResolveNotificationActionRequest names the notification whose deep link is
+// being followed. The follower is always the authenticated caller, so the
+// request carries no subject.
+message ResolveNotificationActionRequest {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+}
+
+// ResolveNotificationActionResponse carries the destination to open. A
+// notification the caller may no longer reach is reported as missing rather
+// than denied, so following a link cannot become an existence oracle for a
+// resource whose grant was revoked.
+message ResolveNotificationActionResponse {
+  string action_url = 1;
+}
+
 // NotificationService — user notification management
 service NotificationService {
   rpc ListNotifications(ListNotificationsRequest) returns (ListNotificationsResponse) {
@@ -130,5 +145,20 @@ service NotificationService {
       platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
     };
     option (google.api.http) = {delete: "/v1/notifications/{id}"};
+  }
+  // Deliberately Connect-only: the stored action_url is never a public-edge
+  // resource, and the inbox that follows it speaks Connect.
+  rpc ResolveNotificationAction(ResolveNotificationActionRequest) returns (ResolveNotificationActionResponse) {
+    option (saas.policy.v1.method_policy) = {
+      exposure: EXPOSURE_AUTHENTICATED
+      tenant: TENANT_REQUIREMENT_USER
+      mfa: MFA_REQUIREMENT_NONE
+      audit: {emission: AUDIT_EMISSION_NONE}
+      idempotency: IDEMPOTENCY_REQUIREMENT_FORBIDDEN
+      rate_limit: RATE_LIMIT_CLASS_STANDARD_READ
+      request_sensitivity: SENSITIVITY_CONFIDENTIAL
+      response_sensitivity: SENSITIVITY_CONFIDENTIAL
+      platform_role: PLATFORM_ROLE_REQUIREMENT_NONE
+    };
   }
 }

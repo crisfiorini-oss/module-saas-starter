@@ -27,6 +27,18 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
 		},
 	});
 
+	const resolveActionMutation = useMutation({
+		mutationFn: (id: string) => notificationMutations.resolveAction(id),
+		onSuccess: (actionUrl) => {
+			if (!actionUrl) {
+				return;
+			}
+			onClose();
+			router.push(actionUrl);
+		},
+		onError: () => toast.error("This notification is no longer available"),
+	});
+
 	const markAllReadMutation = useMutation({
 		mutationFn: () => notificationMutations.markAllRead(),
 		onSuccess: () => {
@@ -86,8 +98,7 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
 									markReadMutation.mutate(notification.id);
 								}
 								if (notification.actionUrl) {
-									onClose();
-									router.push(notification.actionUrl);
+									resolveActionMutation.mutate(notification.id);
 								}
 							}}
 						>

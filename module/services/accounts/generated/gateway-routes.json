@@ -1092,6 +1092,22 @@
     {
       "protocol": "GATEWAY_PROTOCOL_CONNECT",
       "method": "POST",
+      "path": "/customers.NotificationService/ResolveNotificationAction",
+      "match": "GATEWAY_MATCH_EXACT",
+      "procedure": "/saas.accounts.v1.NotificationService/ResolveNotificationAction",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      },
+      "upstream_endpoint": "connect",
+      "exposure": "EXPOSURE_AUTHENTICATED",
+      "source": "GATEWAY_ROUTE_SOURCE_COMPATIBILITY_ALIAS",
+      "rewrite_path": "/saas.accounts.v1.NotificationService/ResolveNotificationAction",
+      "remove_after": "2026-10-11"
+    },
+    {
+      "protocol": "GATEWAY_PROTOCOL_CONNECT",
+      "method": "POST",
       "path": "/customers.OnboardingService/CompleteStep",
       "match": "GATEWAY_MATCH_EXACT",
       "procedure": "/saas.accounts.v1.OnboardingService/CompleteStep",
@@ -3671,6 +3687,22 @@
       "path": "/saas.accounts.v1.NotificationService/MarkRead",
       "match": "GATEWAY_MATCH_EXACT",
       "procedure": "/saas.accounts.v1.NotificationService/MarkRead",
+      "owner": {
+        "module": "saas-starter",
+        "service": "accounts"
+      },
+      "upstream_endpoint": "connect",
+      "exposure": "EXPOSURE_AUTHENTICATED",
+      "source": "GATEWAY_ROUTE_SOURCE_DESCRIPTOR",
+      "rewrite_path": "",
+      "remove_after": ""
+    },
+    {
+      "protocol": "GATEWAY_PROTOCOL_CONNECT",
+      "method": "POST",
+      "path": "/saas.accounts.v1.NotificationService/ResolveNotificationAction",
+      "match": "GATEWAY_MATCH_EXACT",
+      "procedure": "/saas.accounts.v1.NotificationService/ResolveNotificationAction",
       "owner": {
         "module": "saas-starter",
         "service": "accounts"

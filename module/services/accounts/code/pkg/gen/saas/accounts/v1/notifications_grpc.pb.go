@@ -21,11 +21,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NotificationService_ListNotifications_FullMethodName  = "/saas.accounts.v1.NotificationService/ListNotifications"
-	NotificationService_GetUnreadCount_FullMethodName     = "/saas.accounts.v1.NotificationService/GetUnreadCount"
-	NotificationService_MarkRead_FullMethodName           = "/saas.accounts.v1.NotificationService/MarkRead"
-	NotificationService_MarkAllRead_FullMethodName        = "/saas.accounts.v1.NotificationService/MarkAllRead"
-	NotificationService_DeleteNotification_FullMethodName = "/saas.accounts.v1.NotificationService/DeleteNotification"
+	NotificationService_ListNotifications_FullMethodName         = "/saas.accounts.v1.NotificationService/ListNotifications"
+	NotificationService_GetUnreadCount_FullMethodName            = "/saas.accounts.v1.NotificationService/GetUnreadCount"
+	NotificationService_MarkRead_FullMethodName                  = "/saas.accounts.v1.NotificationService/MarkRead"
+	NotificationService_MarkAllRead_FullMethodName               = "/saas.accounts.v1.NotificationService/MarkAllRead"
+	NotificationService_DeleteNotification_FullMethodName        = "/saas.accounts.v1.NotificationService/DeleteNotification"
+	NotificationService_ResolveNotificationAction_FullMethodName = "/saas.accounts.v1.NotificationService/ResolveNotificationAction"
 )
 
 // NotificationServiceClient is the client API for NotificationService service.
@@ -39,6 +40,9 @@ type NotificationServiceClient interface {
 	MarkRead(ctx context.Context, in *MarkNotificationReadRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	MarkAllRead(ctx context.Context, in *MarkAllNotificationsReadRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	DeleteNotification(ctx context.Context, in *DeleteNotificationRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Deliberately Connect-only: the stored action_url is never a public-edge
+	// resource, and the inbox that follows it speaks Connect.
+	ResolveNotificationAction(ctx context.Context, in *ResolveNotificationActionRequest, opts ...grpc.CallOption) (*ResolveNotificationActionResponse, error)
 }
 
 type notificationServiceClient struct {
@@ -99,6 +103,16 @@ func (c *notificationServiceClient) DeleteNotification(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *notificationServiceClient) ResolveNotificationAction(ctx context.Context, in *ResolveNotificationActionRequest, opts ...grpc.CallOption) (*ResolveNotificationActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveNotificationActionResponse)
+	err := c.cc.Invoke(ctx, NotificationService_ResolveNotificationAction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NotificationServiceServer is the server API for NotificationService service.
 // All implementations must embed UnimplementedNotificationServiceServer
 // for forward compatibility.
@@ -110,6 +124,9 @@ type NotificationServiceServer interface {
 	MarkRead(context.Context, *MarkNotificationReadRequest) (*emptypb.Empty, error)
 	MarkAllRead(context.Context, *MarkAllNotificationsReadRequest) (*emptypb.Empty, error)
 	DeleteNotification(context.Context, *DeleteNotificationRequest) (*emptypb.Empty, error)
+	// Deliberately Connect-only: the stored action_url is never a public-edge
+	// resource, and the inbox that follows it speaks Connect.
+	ResolveNotificationAction(context.Context, *ResolveNotificationActionRequest) (*ResolveNotificationActionResponse, error)
 	mustEmbedUnimplementedNotificationServiceServer()
 }
 
@@ -134,6 +151,9 @@ func (UnimplementedNotificationServiceServer) MarkAllRead(context.Context, *Mark
 }
 func (UnimplementedNotificationServiceServer) DeleteNotification(context.Context, *DeleteNotificationRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteNotification not implemented")
+}
+func (UnimplementedNotificationServiceServer) ResolveNotificationAction(context.Context, *ResolveNotificationActionRequest) (*ResolveNotificationActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveNotificationAction not implemented")
 }
 func (UnimplementedNotificationServiceServer) mustEmbedUnimplementedNotificationServiceServer() {}
 func (UnimplementedNotificationServiceServer) testEmbeddedByValue()                             {}
@@ -246,6 +266,24 @@ func _NotificationService_DeleteNotification_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NotificationService_ResolveNotificationAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveNotificationActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotificationServiceServer).ResolveNotificationAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NotificationService_ResolveNotificationAction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotificationServiceServer).ResolveNotificationAction(ctx, req.(*ResolveNotificationActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NotificationService_ServiceDesc is the grpc.ServiceDesc for NotificationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -272,6 +310,10 @@ var NotificationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteNotification",
 			Handler:    _NotificationService_DeleteNotification_Handler,
+		},
+		{
+			MethodName: "ResolveNotificationAction",
+			Handler:    _NotificationService_ResolveNotificationAction_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

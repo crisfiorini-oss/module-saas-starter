@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"accounts/pkg/business"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func (s *PostgresStore) CreateNotification(ctx context.Context, n *business.Notification) error {
@@ -180,6 +182,38 @@ func (s *PostgresStore) DeleteNotification(ctx context.Context, id string) error
 	q := s.getQueryExecutor(ctx)
 	_, err := q.Exec(ctx, `DELETE FROM notifications WHERE id = $1`, id)
 	return err
+}
+
+// GetNotification reads one notification by id. Run under WithUserTx: the RLS
+// policy on `notifications` keys on user_id, so an id belonging to another user
+// reads as absent rather than forbidden. Returns (nil, nil) on miss.
+func (s *PostgresStore) GetNotification(ctx context.Context, id string) (*business.Notification, error) {
+	var n business.Notification
+	var orgID, actionURL, resourceType, resourceID *string
+	err := s.getQueryExecutor(ctx).QueryRow(ctx, `
+		SELECT id, user_id, org_id, title, body, type, action_url, resource_type, resource_id, read_at, created_at
+		FROM notifications
+		WHERE id = $1`, id).Scan(&n.ID, &n.UserID, &orgID, &n.Title, &n.Body, &n.Type,
+		&actionURL, &resourceType, &resourceID, &n.ReadAt, &n.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if orgID != nil {
+		n.OrgID = *orgID
+	}
+	if actionURL != nil {
+		n.ActionURL = *actionURL
+	}
+	if resourceType != nil {
+		n.ResourceType = *resourceType
+	}
+	if resourceID != nil {
+		n.ResourceID = *resourceID
+	}
+	return &n, nil
 }
 
 // GetNotificationUserID resolves notification.id → user_id. Called

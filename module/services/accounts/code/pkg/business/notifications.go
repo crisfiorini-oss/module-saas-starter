@@ -2,6 +2,7 @@ package business
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	gen "accounts/pkg/gen/saas/accounts/v1"
@@ -277,6 +278,57 @@ func (s *Service) visibleResources(ctx context.Context, userID string, refs []re
 		}
 	}
 	return visible, nil
+}
+
+// ErrNotificationNotFound reports that no notification with this id is readable
+// by the caller. A follow item whose resource the caller may no longer see
+// reports exactly this error too: the two answers have to be indistinguishable,
+// or following a link becomes an existence oracle for a revoked resource.
+var ErrNotificationNotFound = errors.New("notification not found")
+
+// ResolveNotificationAction re-authorizes a notification's deep link at the
+// moment it is followed, and returns where to go.
+//
+// The stored action_url is a cache of a past grant, exactly as the title and
+// body beside it are. Filtering the inbox at read time narrows the window but
+// cannot close it: a page fetched at T is filtered against visibility at T, and
+// the link may be followed minutes later, after a revocation, from a page still
+// holding the item. So the resource is rechecked here — one point check, since
+// exactly one resource is in question.
+//
+// The row is read under the caller's own user-scoped transaction, so the RLS
+// policy on `notifications` rather than a comparison in Go is what makes another
+// user's id indistinguishable from an absent one.
+func (s *Service) ResolveNotificationAction(ctx context.Context, userID, id string) (string, error) {
+	w := wool.Get(ctx).In("ResolveNotificationAction")
+	var notification *Notification
+	if err := s.store.WithUserTx(ctx, userID, func(ctx context.Context) error {
+		n, err := s.store.GetNotification(ctx, id)
+		notification = n
+		return err
+	}); err != nil {
+		return "", w.Wrapf(err, "cannot resolve notification action")
+	}
+	if notification == nil || notification.ActionURL == "" {
+		return "", ErrNotificationNotFound
+	}
+	if notification.ResourceType == "" {
+		return notification.ActionURL, nil
+	}
+	// An org-less reference cannot be resolved against a scope tree at all, and
+	// notifications.org_id is descriptive and nullable, so the unanswerable
+	// question fails closed.
+	if notification.OrgID == "" {
+		return "", ErrNotificationNotFound
+	}
+	visible, err := s.resourceIsVisible(ctx, userID, notification.OrgID, notification.ResourceType, notification.ResourceID)
+	if err != nil {
+		return "", w.Wrapf(err, "cannot resolve notification action")
+	}
+	if !visible {
+		return "", ErrNotificationNotFound
+	}
+	return notification.ActionURL, nil
 }
 
 // MarkRead marks a caller-owned notification as read. Resolve and compare the

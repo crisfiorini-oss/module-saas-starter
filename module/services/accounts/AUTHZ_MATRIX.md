@@ -2,7 +2,7 @@
 
 > Generated from protobuf service descriptors and `saas.policy.v1.method_policy`; only the prose description is joined from `pkg/business/introspection.go`. Do not edit by hand. Run `go generate ./pkg/business` from `module/services/accounts/code`.
 
-Inventory: **200 RPCs** across **32 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
+Inventory: **201 RPCs** across **32 services**. Missing, invalid, or unclassified procedures are denied by both Connect and gRPC interceptors.
 
 The compact tier is retained for compatibility. Guards, resource bindings, audit events, limiter class, and data sensitivity are descriptor-authoritative. Domain handlers may enforce stronger state-dependent rules but may not weaken this floor.
 
@@ -98,6 +98,7 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 | `/saas.accounts.v1.NotificationService/ListNotifications` | unary | `GET /v1/notifications` | `auth` | exposure=AUTHENTICATED; tenant=USER | — | — | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | List the caller's notifications. |
 | `/saas.accounts.v1.NotificationService/MarkAllRead` | unary | `POST /v1/notifications:read-all` | `auth` | exposure=AUTHENTICATED; tenant=USER | — | — | — | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Mark every one of the caller's notifications as read. |
 | `/saas.accounts.v1.NotificationService/MarkRead` | unary | `POST /v1/notifications/{id}:read` | `auth` | exposure=AUTHENTICATED; tenant=USER | — | — | — | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Mark one of the caller's notifications as read. |
+| `/saas.accounts.v1.NotificationService/ResolveNotificationAction` | unary | `—` | `auth` | exposure=AUTHENTICATED; tenant=USER | — | — | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | Re-authorize one of the caller's notification deep links and return its destination. |
 | `/saas.accounts.v1.OnboardingService/CompleteStep` | unary | `POST /v1/organizations/{organization_id}/onboarding/{step_id}:complete` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | organization_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.onboarding.step_completed | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Confirm a step only after its represented product state exists. |
 | `/saas.accounts.v1.OnboardingService/GetProgress` | unary | `GET /v1/organizations/{organization_id}/onboarding` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | organization_id → ORGANIZATION/DIRECT_ID | — | FORBIDDEN / STANDARD_READ | CONFIDENTIAL → CONFIDENTIAL | Versioned organization activation checklist for the caller. |
 | `/saas.accounts.v1.OnboardingService/SkipStep` | unary | `POST /v1/organizations/{organization_id}/onboarding/{step_id}:skip` | `org_member` | exposure=AUTHENTICATED; tenant=ORG_MEMBER | — | organization_id → ORGANIZATION/DIRECT_ID | SUCCESS: saas.onboarding.step_skipped | FORBIDDEN / STANDARD_WRITE | CONFIDENTIAL → CONFIDENTIAL | Record an explicit skip for an optional step. |
@@ -211,7 +212,7 @@ The compact tier is retained for compatibility. Guards, resource bindings, audit
 
 ## Tier totals
 
-- `auth`: 39
+- `auth`: 40
 - `internal`: 38
 - `mfa`: 3
 - `org_admin`: 41
