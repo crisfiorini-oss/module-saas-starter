@@ -20,7 +20,7 @@ require (
 	github.com/codefly-dev/sdk-go/workcontext v0.1.1-0.20261018052022-70dc7a546458
 	github.com/codefly-dev/service-postgres/libs/go v0.0.0-20260929200903-bae6c31c7211
 	github.com/codefly-dev/service-redis/cache v0.3.0
-	github.com/codefly-dev/service-vault/keyservice v0.0.0-20261023164748-c4743f2f97e9
+	github.com/codefly-dev/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7
 	github.com/go-webauthn/webauthn v0.18.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -136,4 +136,4 @@ require (
 )
 
 // DEVELOPMENT CANDIDATE: service-vault PR #86; replace with an owner release before promotion.
-replace github.com/codefly-dev/service-vault/keyservice => github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023164748-c4743f2f97e9
+replace github.com/codefly-dev/service-vault/keyservice => github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7
