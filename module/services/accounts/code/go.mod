@@ -20,6 +20,7 @@ require (
 	github.com/codefly-dev/sdk-go/workcontext v0.1.1-0.20261018052022-70dc7a546458
 	github.com/codefly-dev/service-postgres/libs/go v0.0.0-20260929200903-bae6c31c7211
 	github.com/codefly-dev/service-redis/cache v0.3.0
+	github.com/codefly-dev/service-vault/keyservice v0.0.0-20261023164748-c4743f2f97e9
 	github.com/go-webauthn/webauthn v0.18.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
@@ -54,6 +55,8 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.5.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.9.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
@@ -131,3 +134,6 @@ require (
 	golang.org/x/text v0.42.0 // indirect
 	oras.land/oras-go/v2 v2.6.2 // indirect
 )
+
+// DEVELOPMENT CANDIDATE: service-vault PR #86; replace with an owner release before promotion.
+replace github.com/codefly-dev/service-vault/keyservice => github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023164748-c4743f2f97e9

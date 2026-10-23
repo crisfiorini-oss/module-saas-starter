@@ -62,7 +62,26 @@ TTL — or within TTL + grace if accounts is unreachable for the whole window.
 > so there is no projection to read and no agent that owns the driver the way
 > `service-vault` owns Vault's. Filed as codefly-dev/cli#924. Everything above
 > the seam is already vendor-neutral, so when that kind exists the driver moves
-> below it and nothing here changes.
+> below it and nothing here changes. New managed providers use the owner runtime
+> client described below; the legacy GCP implementation remains unchanged.
+
+`KEY_SERVICE_MANAGED_BINDING` optionally carries the deployment-produced,
+non-secret provider descriptor consumed by `service-vault/keyservice`. Accounts
+depends on that client's generic encryption, MAC and wrapping operations; no
+second cloud SDK or driver lives here. The existing `kms` / `kms-wrapped`
+selections still apply. Mixing a descriptor with legacy KMS key names is refused.
+
+The client owns provider ciphertexts, key-version checks and workload identity;
+Accounts retains `cfs1` envelope framing, domain errors, tenant-key selection and
+the `signing-key-wrap` purpose. The unwrapped value must still be a base64
+Ed25519 seed. A provider outage never falls back to ephemeral signing, including
+when a local caller otherwise permits a fixture key.
+
+Build or reuse: the existing Host `Sealer`, `KeyFactory`, `Cipher` and wrapped-seed
+path already define the required contracts. The owner client's provider driver
+fills the missing implementation; no new Host crypto primitive, signing algorithm
+or key store is introduced. Infrastructure allocation, exact workload grants,
+recovery custody and live deployment remain separate qualification requirements.
 
 
 Two backends, selected per key family in the `key-service` group

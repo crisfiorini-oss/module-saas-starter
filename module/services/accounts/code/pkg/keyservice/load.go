@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	codefly "github.com/codefly-dev/sdk-go"
+	managed "github.com/codefly-dev/service-vault/keyservice"
 
 	"accounts/pkg/vaultconnection"
 )
@@ -67,7 +68,8 @@ type Binding struct {
 	// VaultHealth probes the Vault that holds the envelope key, or nil.
 	VaultHealth func(ctx context.Context) error
 
-	kms KMSConfig
+	kms     KMSConfig
+	managed managed.Client
 	// wrappedSigningKey is the configured ciphertext, read once at selection so
 	// a missing one refuses with every other configuration problem rather than
 	// after a key service has already been reached.
@@ -138,7 +140,24 @@ func Load(ctx context.Context) (*Binding, error) {
 		Backend: backend, Previous: previous, SigningBackend: signing,
 		wrappedSigningKey: groupValue(ctx, SigningKeyWrappedKey),
 	}
-	if backend == BackendKMS || previous == BackendKMS || signing == BackendKMSWrapped {
+	descriptor := groupValue(ctx, ManagedBindingKey)
+	usesManaged := backend == BackendKMS || previous == BackendKMS || signing == BackendKMSWrapped
+	if descriptor != "" {
+		if !usesManaged {
+			return nil, errors.New("managed key-service binding requires a kms consumer")
+		}
+		for _, key := range []string{KMSEnvelopeKeyKey, KMSMACKeyKey, KMSSigningWrapKeyKey} {
+			if groupValue(ctx, key) != "" {
+				return nil, errors.New("managed key-service binding cannot be combined with legacy KMS key names")
+			}
+		}
+		if signing == BackendKMSWrapped && binding.wrappedSigningKey == "" {
+			return nil, fmt.Errorf("%s is required for wrapped signing", SigningKeyWrappedKey)
+		}
+		if binding.managed, err = managed.New(ctx, descriptor); err != nil {
+			return nil, err
+		}
+	} else if usesManaged {
 		if binding.kms, err = kmsConfig(ctx, backend, previous, signing); err != nil {
 			return nil, err
 		}
@@ -175,6 +194,9 @@ func (b *Binding) sealer(ctx context.Context, backend Backend) (Sealer, error) {
 		}
 		return sealer, nil
 	case BackendKMS:
+		if b.managed != nil {
+			return managedSealer{b.managed}, nil
+		}
 		return NewKMSSealer(ctx, b.kms)
 	default:
 		return nil, fmt.Errorf("unsupported key-service backend %q", backend)
@@ -209,6 +231,9 @@ func (b *Binding) vaultConnection(ctx context.Context) (*vaultconnection.Connect
 // gateway pinned.
 func (b *Binding) SigningKey(ctx context.Context, ephemeral bool) (ed25519.PrivateKey, error) {
 	if b.SigningBackend == BackendKMSWrapped {
+		if b.managed != nil {
+			return managedSigningKey(ctx, b.managed, b.wrappedSigningKey)
+		}
 		wrap, err := NewKMSKeyWrap(ctx, b.kms)
 		if err != nil {
 			return nil, err
