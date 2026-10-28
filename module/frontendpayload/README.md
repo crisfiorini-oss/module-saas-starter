@@ -11,6 +11,11 @@ repository's own host (Artifact Registry answers every blob read that way);
 redirects elsewhere and foreign authentication realms are refused. HTTPS is explicit; plain HTTP requires the mesh Service assertion
 or a loopback development source. No registry is selected by default.
 
+The Azure SDK reader also follows ACR's dedicated data-download redirect to
+`<same-registry>.<region>.data.azurecr.io` over HTTPS. Only credential-free GETs
+reach that endpoint; authentication and token exchanges remain on the registry
+login host. The cell must admit that registry's regional data endpoint as well.
+
 `DirectorySource` reads Codefly's existing native artifact cache, whose files are
 named by the SHA-256 hex digest. It never writes a cache and is refused when the
 host reports that it runs in a Pod. Neither adapter is an artifact store:

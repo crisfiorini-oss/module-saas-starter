@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -38,12 +39,56 @@ func azureRegistrySource(ref registry.Reference, credential azcore.TokenCredenti
 	client, err := azcontainerregistry.NewBlobClient("https://"+ref.Registry, credential,
 		&azcontainerregistry.BlobClientOptions{ClientOptions: azcore.ClientOptions{
 			Transport: &http.Client{Timeout: 30 * time.Second,
-				Transport: repositoryTransport{host: ref.Registry, scheme: "https", base: base}},
+				Transport: azureRegistryTransport{registry: ref.Registry, base: base},
+				CheckRedirect: func(next *http.Request, via []*http.Request) error {
+					if len(via) > 3 || next.URL.Scheme != "https" || next.URL.User != nil ||
+						(next.URL.Host != ref.Registry && !azureDataEndpoint(ref.Registry, next.URL.Host)) {
+						return errRedirectRefused
+					}
+					if next.URL.Host != ref.Registry {
+						next.Header.Del("Authorization")
+					}
+					return nil
+				}},
 		}})
 	if err != nil {
 		return nil, &readerIdentityError{"could not configure the Azure frontend artifact reader"}
 	}
 	return &azureWorkloadSource{client: client, repository: ref.Repository}, nil
+}
+
+// Private-link ACR downloads redirect to this registry's regional data host.
+// Neither arbitrary Azure storage hosts nor another registry are admitted.
+func azureDataEndpoint(registry, host string) bool {
+	name, ok := strings.CutSuffix(registry, ".azurecr.io")
+	if !ok || strings.ContainsAny(name, ".:") {
+		return false
+	}
+	parts := strings.Split(host, ".")
+	if len(parts) != 5 || parts[0] != name || parts[2] != "data" || parts[3] != "azurecr" || parts[4] != "io" || parts[1] == "" {
+		return false
+	}
+	for _, ch := range parts[1] {
+		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9') {
+			return false
+		}
+	}
+	return true
+}
+
+type azureRegistryTransport struct {
+	registry string
+	base     http.RoundTripper
+}
+
+func (t azureRegistryTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Scheme != "https" || r.URL.User != nil {
+		return nil, errRedirectRefused
+	}
+	if r.URL.Host != t.registry && (!azureDataEndpoint(t.registry, r.URL.Host) || r.Method != http.MethodGet || r.Header.Get("Authorization") != "") {
+		return nil, errRedirectRefused
+	}
+	return t.base.RoundTrip(r)
 }
 
 func (s *azureWorkloadSource) Open(ctx context.Context, digest solutionhost.PayloadDigest) (io.ReadCloser, error) {
