@@ -24,6 +24,8 @@ func TestAzureBundleDownloadFollowsRegistryDataRedirectWithoutCredentials(t *tes
 	digest := string(frontend.Payload.Digest)
 	refresh := "e30." + base64.RawStdEncoding.EncodeToString([]byte(fmt.Sprintf(`{"exp":%d}`, time.Now().Add(time.Hour).Unix()))) + ".sig"
 	downloads := 0
+	digestHeader := true
+	tamper := false
 	transport := azureRedirectRoundTripper(func(r *http.Request) (*http.Response, error) {
 		response := &http.Response{StatusCode: 200, Header: make(http.Header), Request: r, Body: io.NopCloser(strings.NewReader(""))}
 		switch {
@@ -31,9 +33,15 @@ func TestAzureBundleDownloadFollowsRegistryDataRedirectWithoutCredentials(t *tes
 			require.Equal(t, http.MethodGet, r.Method)
 			require.Empty(t, r.Header.Get("Authorization"), "a registry bearer never reaches the download endpoint")
 			downloads++
-			response.Header.Set("Docker-Content-Digest", digest)
+			if digestHeader {
+				response.Header.Set("Docker-Content-Digest", digest)
+			}
 			response.Header.Set("Content-Length", fmt.Sprint(len(data)))
-			response.Body = io.NopCloser(strings.NewReader(string(data)))
+			body := append([]byte(nil), data...)
+			if tamper {
+				body[len(body)-1] ^= 1
+			}
+			response.Body = io.NopCloser(strings.NewReader(string(body)))
 			response.ContentLength = int64(len(data))
 		case r.URL.Path == "/oauth2/exchange":
 			response.Body = io.NopCloser(strings.NewReader(fmt.Sprintf(`{"refresh_token":%q}`, refresh)))
@@ -58,6 +66,14 @@ func TestAzureBundleDownloadFollowsRegistryDataRedirectWithoutCredentials(t *tes
 	require.NoError(t, err)
 	require.Equal(t, "azure-data-endpoint", readAsset(t, bundle, "deferred.js"))
 	require.Equal(t, 1, downloads)
+	digestHeader = false
+	bundle, err = Prepare(ctx, source, frontend)
+	require.NoError(t, err, "the blob storage redirect response need not repeat registry-specific digest headers")
+	require.Equal(t, "azure-data-endpoint", readAsset(t, bundle, "deferred.js"))
+	tamper = true
+	_, err = Prepare(ctx, source, frontend)
+	require.ErrorContains(t, err, "digest mismatch", "signed bytes remain verified without a registry digest header")
+	require.Equal(t, 3, downloads)
 }
 
 func TestAzureDownloadTransportRefusesOtherDestinationsAndCredentials(t *testing.T) {

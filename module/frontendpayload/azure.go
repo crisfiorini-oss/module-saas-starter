@@ -100,7 +100,9 @@ func (s *azureWorkloadSource) Open(ctx context.Context, digest solutionhost.Payl
 		}
 		return nil, unavailable(err)
 	}
-	if response.DockerContentDigest == nil || *response.DockerContentDigest != string(digest) ||
+	// A redirected storage response may omit the registry-specific digest header.
+	// Prepare verifies the downloaded bytes against the signed digest before serving.
+	if (response.DockerContentDigest != nil && *response.DockerContentDigest != string(digest)) ||
 		response.ContentLength == nil || *response.ContentLength < 0 || *response.ContentLength > MaxBundleBytes {
 		response.BlobData.Close()
 		return nil, errors.New("frontend artifact descriptor differs from the admitted bundle")
