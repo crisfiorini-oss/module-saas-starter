@@ -86,6 +86,8 @@ github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-202
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261027005009-3e9f20a706ff/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028173843-c2485a8f50cf h1:5HLTb1dvcbrZkmVF8byhqqXvtrUsxoYKXHhS77fGC0c=
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028173843-c2485a8f50cf/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352 h1:TzMok5bj4nTOK1Vb/U/HVVM0MIgYagu3WuuGbG/xuAI=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
 github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7 h1:QhfPRUrZ8tp6XFg2/jXvx1fwtNqVHWYOkKeXkb7bZ14=
 github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7/go.mod h1:15o4NPE329wd93fpl/zFPlj+Dx7bGoQqrDT5+nO7Yso=
 github.com/cyphar/filepath-securejoin v0.7.0 h1:s0Y3ITPy6sQn5xt54DuYvTF8hu134ooYLUb58DX/HjE=

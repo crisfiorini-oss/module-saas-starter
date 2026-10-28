@@ -72,6 +72,8 @@ github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-202
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261027005009-3e9f20a706ff/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028173843-c2485a8f50cf h1:5HLTb1dvcbrZkmVF8byhqqXvtrUsxoYKXHhS77fGC0c=
 github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028173843-c2485a8f50cf/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352 h1:TzMok5bj4nTOK1Vb/U/HVVM0MIgYagu3WuuGbG/xuAI=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
 github.com/cyphar/filepath-securejoin v0.7.0 h1:s0Y3ITPy6sQn5xt54DuYvTF8hu134ooYLUb58DX/HjE=
 github.com/cyphar/filepath-securejoin v0.7.0/go.mod h1:ymLGms/u3BYaviIiuKFnUx8EkQEZeK6cInNoAPJA3o4=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

@@ -117,4 +117,4 @@ require (
 exclude google.golang.org/genproto v0.0.0-20210226172003-ab064af71705
 
 // DEVELOPMENT CANDIDATE: frontend registry reader in PR #1234; adopt an owner release before promotion.
-replace github.com/codefly-dev/module-saas-starter/module/frontendpayload => github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028173843-c2485a8f50cf
+replace github.com/codefly-dev/module-saas-starter/module/frontendpayload => github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352
