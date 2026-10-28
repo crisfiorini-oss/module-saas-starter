@@ -18,6 +18,8 @@ github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1 h1:u93s+zU2JD62im61Bm5C
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1/go.mod h1:oXtinPO4OLj9d1DOTrqrL1oRwGhcqadvAmrl6wTeGlk=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache v0.4.0 h1:xFaZZ+IubdftrDHnGGwZ6QvQ3KHTtWl2MCK+GMt2vxs=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity/cache v0.4.0/go.mod h1:mCBhUhlMjLLJKr5aqw2TNS/VqJOie8MzWq3DAMJeKso=
+github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry v0.2.3 h1:ldKsKtEIblsgsr6mPwrd9yRntoX6uLz/K89wsldwx/k=
+github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry v0.2.3/go.mod h1:MAm7bk0oDLmD8yIkvfbxPW04fxzphPyL+7GzwHxOp6Y=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 h1:fhqpLE3UEXi9lPaBRpQ6XuRW0nU7hgg4zlmZZa+a9q4=
 github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0/go.mod h1:7dCRMLwisfRH3dBupKeNCioWYUZ4SS09Z14H+7i8ZoY=
 github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.5.0 h1:MaKvxE6D0KkjOg6Wd9M00iqP5PR0kUxCfiezes4JweM=
@@ -80,8 +82,6 @@ github.com/codefly-dev/gortk v0.2.0 h1:7bOlS5valYz2zil+fZctQNcPCYBcPj86abcw9N8h1
 github.com/codefly-dev/gortk v0.2.0/go.mod h1:dDWUMFgAP063OCGhTEpV7FFUj9+zTcxxO/nV80VKEwg=
 github.com/codefly-dev/interface-cache/go/cache v0.4.1 h1:S7a20cVs3ilW8/HSpzmsyfJx/GJHgJ1xW9Dm9MYXYPI=
 github.com/codefly-dev/interface-cache/go/cache v0.4.1/go.mod h1:ki57cBwXnpFLx1uO29KiDY06lzyG/gXXBkqgi5ZNKWQ=
-github.com/codefly-dev/module-saas-starter/module/frontendpayload v0.0.0-20261021192505-6fd56dae2e04 h1:I3x8ihrzBMpv9UrLYc/3TmKl+lBvA5+xGcigENG/IR8=
-github.com/codefly-dev/module-saas-starter/module/frontendpayload v0.0.0-20261021192505-6fd56dae2e04/go.mod h1:LZl0I41APmLxG3Awdd4gn/pIhMOOgJqLuMuNGyXUJMg=
 github.com/codefly-dev/sdk-go v0.4.1 h1:WUKYWxXfojTr88SkLtq0T8aqpV0o5pR/muUUcsUUlzk=
 github.com/codefly-dev/sdk-go v0.4.1/go.mod h1:zr9ts3kkWNv2XEFUXZB+ydfW6x5b6/NbUvBm4KVYNqs=
 github.com/codefly-dev/sdk-go/workcontext v0.1.1-0.20261018052022-70dc7a546458 h1:wBOL7QsuoC0HsS43gsH2+tpsipk4os077C2VUDkMUHg=
@@ -94,6 +94,8 @@ github.com/containerd/errdefs v1.0.0 h1:tg5yIfIlQIrxYtu9ajqY42W3lpS19XqdxRQeEwYG
 github.com/containerd/errdefs v1.0.0/go.mod h1:+YBYIdtsnF4Iw6nWZhJcqGSg/dwvV7tyJ/kCkyJ2k+M=
 github.com/containerd/errdefs/pkg v0.3.0 h1:9IKJ06FvyNlexW690DXuQNx2KA2cUJXx151Xdx3ZPPE=
 github.com/containerd/errdefs/pkg v0.3.0/go.mod h1:NJw6s9HwNuRhnjJhM7pylWwMyAkmCQvQ4GpJHEqRLVk=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352 h1:TzMok5bj4nTOK1Vb/U/HVVM0MIgYagu3WuuGbG/xuAI=
+github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352/go.mod h1:k7Jens34+w8LAGA6J/eM9UMKjYewzYCMlIHX0ePPj6I=
 github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7 h1:QhfPRUrZ8tp6XFg2/jXvx1fwtNqVHWYOkKeXkb7bZ14=
 github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7/go.mod h1:15o4NPE329wd93fpl/zFPlj+Dx7bGoQqrDT5+nO7Yso=
 github.com/cyphar/filepath-securejoin v0.7.0 h1:s0Y3ITPy6sQn5xt54DuYvTF8hu134ooYLUb58DX/HjE=

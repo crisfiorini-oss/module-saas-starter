@@ -54,6 +54,7 @@ require (
 	cel.dev/expr v0.25.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/containers/azcontainerregistry v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
@@ -137,3 +138,6 @@ require (
 
 // DEVELOPMENT CANDIDATE: service-vault PR #86; replace with an owner release before promotion.
 replace github.com/codefly-dev/service-vault/keyservice => github.com/crisfiorini-oss/service-vault/keyservice v0.0.0-20261023210413-a6c7256bfae7
+
+// DEVELOPMENT CANDIDATE: frontend registry reader in PR #1234; adopt an owner release before promotion.
+replace github.com/codefly-dev/module-saas-starter/module/frontendpayload => github.com/crisfiorini-oss/module-saas-starter/module/frontendpayload v0.0.0-20261028181434-d67666bdc352
